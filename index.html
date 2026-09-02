@@ -218,7 +218,7 @@ body.jogo .btn{padding:11px 14px; font-size:14px}
 .ignore:hover{color:var(--ink-2); border-color:var(--ink-3)}
 .entry.ignored{opacity:.45}
 .entry.ignored .heard{text-decoration:line-through}
-.tag.ok{color:var(--ok)} .tag.no{color:var(--bad)} .tag.amb{color:var(--warn)} .tag.ex{color:var(--ink-3)}
+.tag.ok{color:var(--ok)} .tag.no{color:var(--bad)} .tag.amb{color:var(--warn)} .tag.ex{color:var(--ink-3)} .tag.vazio{color:var(--ink-3); border-style:dashed}
 .empty{padding:20px 14px; color:var(--ink-3); font-size:13px}
 
 /* ---- gramática ---- */
@@ -483,10 +483,6 @@ function decompor(w){
   }
   var r=m[n];
   if(!r || r.p.length<2 || r.p.length>4) return null;
-  /* "32" não vira games 3-2: games se fala "três a dois", e o reconhecedor entrega
-     isso com o "a". Um "32" colado veio de elisão ("trinta e dois" de "trinta iguais"),
-     nunca de alguém cantando games. Decomposições maiores continuam valendo. */
-  if(n===2 && !PTSET[r.p[0]] && !PTSET[r.p[1]]) return null;
   return r.p;
 }
 var lastGlue = "";
@@ -538,7 +534,18 @@ function teamsFrom(raw, s){
 function glued(r, g){ if(g) r.glue=g; return r; }
 function ehGame(x){ return x && x.gm!==null && x.gm<=7; }
 function scoreFrom(s){
-  var bare = unglue(stripSide(stripLead(s)));
+  var pre = stripSide(stripLead(s));
+
+  /* "trinta e dois" e "quarenta e um" são os únicos compostos que o tênis produz:
+     saem da elisão de "trinta iguais" / "quarenta iguais", porque só 30 e 40 são
+     pontos que precedem a palavra. Já "11", "21", "64" não são compostos de nada —
+     são a colagem de dois games, que se fala "um a um", "seis a quatro". */
+  var comp = pre.match(/^(3|4)([1-9])$/);   /* o dígito extra é a marca da elisão */
+  if(comp) return {t:"pts", a:+comp[1]*10, b:+comp[1]*10,
+                   note:'"' + pre + '" = "' + (comp[1]==="3"?"trinta":"quarenta") + ' e ' + comp[2] +
+                        '", que é como sai "' + (comp[1]==="3"?"trinta":"quarenta") + ' iguais"'};
+
+  var bare = unglue(pre);
   var glue = lastGlue;
 
   /* Só o 15 aceita o "a" solto. "quinze" é palavra longa e o reconhecedor entrega o
@@ -617,11 +624,6 @@ function scoreFrom(s){
   if(n.length===1 && n[0].pt!==null)
     return {t:"amb", why:'ouvi só "' + n[0].pt + '" — faltou o outro número'};
 
-  /* Games se fala com o "a" — "três a dois" — e o reconhecedor entrega o "a". Um "32"
-     colado, então, não é games: é o número composto "trinta e dois", que é justamente
-     o que a elisão de "trinta iguais" produz. Mesma coisa para "quarenta e X". */
-  var comp = bare.match(/^(3|4)(\d)$/);
-  if(comp) return {t:"pts", a:+comp[1]*10, b:+comp[1]*10, note:'"' + bare + '" = "' + (comp[1]==="3"?"trinta":"quarenta") + ' e ' + comp[2] + '", que é como sai "' + (comp[1]==="3"?"trinta":"quarenta") + ' iguais"'};
 
   return null;
 }
@@ -876,6 +878,7 @@ function speak(txt){
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var rec=null, on=false, lastErr="", micOk=null;
 var restarts=0, lastHeard=0, cycles=0;   /* freio do laço de reinício */
+var interimAtual="", teveFinal=false;    /* rede para o final que não chega */
 
 /* Depois de alguns pedidos ignorados, o Chrome passa a negar sozinho e nunca mais pergunta.
    Por isso consultamos o estado antes: se já está negado, não adianta tentar — tem que
@@ -965,6 +968,7 @@ function forcaDaAlt(txt){ return PALAVRA_FORTE.test(norm(txt)) ? 2 : 1; }
 
 function handleFinal(alts){
   heardN++;
+  teveFinal=true;
   var chosen=null, p=null, ai=0, melhorForca=-1, forte=false;
   for(var i=0;i<alts.length;i++){
     var cand = parse(alts[i]);
@@ -992,9 +996,12 @@ function handleFinal(alts){
 
 function start(){
   if(!SR){ advise(); setDiag("não dá para iniciar"); return; }
+  teveFinal=false; interimAtual="";      /* rede zerada a cada escuta */
   try{ rec = new SR(); }
   catch(e){ lastErr="new SpeechRecognition: "+e.name; setDiag("falhou ao criar o reconhecedor"); advise(); return; }
-  rec.lang="pt-BR"; rec.continuous=!cfg.oneShot; rec.interimResults=true; rec.maxAlternatives=4;
+    /* continuous=false faz o Chrome encerrar na primeira pausa curta e às vezes descartar
+     a frase inteira. Mantemos continuous ligado e paramos na mão depois do resultado. */
+  rec.lang="pt-BR"; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=4;
   rec.onstart=function(){ lastErr=""; setDiag("reconhecedor ativo"); };
   rec.onaudiostart=function(){ setDiag("captando áudio"); };
   rec.onspeechstart=function(){ setDiag("voz detectada"); };
@@ -1005,9 +1012,12 @@ function start(){
       var r=ev.results[i];
       if(r.isFinal){
         var alts=[]; for(var j=0;j<r.length;j++) alts.push(r[j].transcript.trim());
+        teveFinal=true; interimAtual="";
         handleFinal(alts);
+        if(cfg.oneShot){ stop(); $("interim").textContent="Toque para escutar o próximo ponto."; return; }
       } else interim += r[0].transcript;
     }
+    if(interim) interimAtual = interim.trim();
     $("interim").innerHTML = interim ? "<strong>"+interim.replace(/[<>&]/g,"")+"</strong>" : "ouvindo…";
   };
   rec.onerror=function(ev){
@@ -1024,6 +1034,14 @@ function start(){
     } else setDiag("erro: "+ev.error);
   };
   rec.onend=function(){
+    /* O reconhecedor às vezes fecha sem marcar nada como final e a frase se perde.
+       O texto provisório é melhor que silêncio — pelo menos vai para o log. */
+    if(!teveFinal && interimAtual){
+      var salvo = interimAtual; interimAtual="";
+      handleFinal([salvo]);
+    } else if(!teveFinal && on && cfg.oneShot){
+      logRow("(nada ouvido)", "o reconhecedor encerrou sem devolver texto", "vazio", "—");
+    }
     if(!on) return;
     if(cfg.oneShot){ stop(); $("interim").textContent="Toque para escutar o próximo ponto."; return; }
     restarts++; cycles++;
