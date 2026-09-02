@@ -102,6 +102,13 @@ h1{
 }
 .num.pt{font-size:clamp(40px,11vw,58px); color:var(--board-ink)}
 .row-us .num.pt{color:var(--us)} .row-them .num.pt{color:var(--them)}
+@keyframes flashnum{
+  0%{color:var(--accent); transform:scale(1.14)}
+  60%{color:var(--accent); transform:scale(1)}
+  100%{transform:scale(1)}
+}
+.num.mudou{animation:flashnum .6s ease-out}
+@media (prefers-reduced-motion:reduce){ .num.mudou{animation:none; outline:2px solid var(--accent); outline-offset:3px} }
 .rule{grid-column:1/-1; height:1px; background:var(--board-2); margin:6px 0}
 .sets-line{
   grid-column:1/-1; font-family:"IBM Plex Mono", monospace; font-size:11px;
@@ -305,6 +312,7 @@ footer a{color:var(--ink-2)}
         <div class="opts">
           <label class="opt"><input type="checkbox" id="ost" checked><span>Super tie-break no 3º set<small>Terceiro set decidido em tie-break até 10 pontos.</small></span></label>
           <label class="opt"><input type="checkbox" id="oshot" checked><span>Escutar só ao tocar (padrão)<small>Ouve uma frase e desliga — é assim que vai funcionar no relógio, com o gesto do punho abrindo a janela de escuta. Desmarcar liga a escuta contínua, que no Chrome do Android religa a cada frase e pode pedir confirmação toda vez.</small></span></label>
+          <label class="opt"><input type="checkbox" id="osolo" checked><span>Número sozinho vira empate<small>"trinta a" costuma chegar só como "trinta" — o "a" é curto demais. Com isto ligado, um número de ponto sozinho vira empate naquele número, com aviso no log.</small></span></label>
           <label class="opt"><input type="checkbox" id="oorder"><span>Primeiro número é o deles<small>Padrão: o primeiro número que você fala é o nosso. Dizer "pra eles" ou "pra nós" na frase manda mais que este ajuste.</small></span></label>
           <label class="opt"><input type="checkbox" id="otts"><span>Confirmação falada<small>O app repete o placar aplicado. Cuidado: o microfone escuta a própria voz do aparelho.</small></span></label>
         </div>
@@ -349,6 +357,7 @@ footer a{color:var(--ink-2)}
           <li><span class="say">quinze zero</span> por padrão o nosso vem primeiro</li>
           <li><span class="say">trinta a quinze pra eles</span> o lado falado inverte a ordem</li>
           <li><span class="say">15 a</span> · <span class="say">30 a</span> · <span class="say">40 a</span> empate naquele número</li>
+          <li><span class="say">30 iguais</span> mais confiável que "30 a" — o "a" solto o reconhecedor perde</li>
           <li><span class="say">quarenta iguais</span> · <span class="say">no edge</span> ponto decisivo</li>
           <li><span class="say">está 15 a 15</span> · <span class="say">placar 30 a 15</span> palavras em volta são ignoradas</li>
         </ul>
@@ -382,7 +391,7 @@ footer a{color:var(--ink-2)}
 
 /* ============ configuração ============ */
 /* No beach tennis todo game é decidido no "no edge": 40-40 = ponto decisivo, nunca há vantagem. */
-var cfg = { superTb:true, invert:false, tts:false, oneShot:true };
+var cfg = { superTb:true, invert:false, tts:false, oneShot:true, soloEmpate:true };
 
 /* ============ estado ============ */
 var PT = [0,15,30,40];
@@ -400,6 +409,7 @@ hist = [];
 /* ============ normalização ============ */
 function norm(s){
   return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/(\d)\s*[\u00AA\u00BA\u00B0\u1D43\u1D52]/g,"$1 a")  /* "15ª" "30º" "40°" -> "15 a" */
     .replace(/(\d)\s*x\s*(\d)/g,"$1 $2")            /* "30x30" -> "30 30" */
     .replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();
 }
@@ -521,7 +531,9 @@ function scoreFrom(s){
   var glue = lastGlue;
 
   /* "15 a", "30 a", "40 a" = empate naquele número */
-  var tie = bare.match(/^([a-z0-9]+)\s*(?:a|ha|h|as|ao)$/);
+  /* O "a" de "trinta a" é a coisa mais fácil de o reconhecedor perder ou trocar.
+     Aceita tudo que ele costuma devolver no lugar. */
+  var tie = bare.match(/^([a-z0-9]+)\s*(?:a|ha|h|as|ao|e|eh|ae)$/);
   if(tie){
     var tw = tie[1];
     if(PTW.hasOwnProperty(tw)) return {t:"pts", a:PTW[tw], b:PTW[tw]};
@@ -567,6 +579,13 @@ function scoreFrom(s){
     /* Número inteiro baixo é game. */
     if(a.gm!==null && b.gm!==null && a.gm<=7 && b.gm<=7) return glued(ord("gms", a.gm, b.gm, s), glue);
   }
+
+  /* Último recurso: sobrou um número de ponto sozinho. Quase sempre é um "30 a"
+     cujo "a" o reconhecedor comeu — um placar precisa de dois números. Assume o
+     empate e avisa, para você ver e desfazer se for outra coisa. */
+  if(cfg.soloEmpate && n.length===1 && n[0].pt!==null)
+    return {t:"pts", a:n[0].pt, b:n[0].pt, note:"você disse só um número — assumi empate"};
+
   return null;
 }
 
@@ -645,7 +664,11 @@ function checkTb(){
   }
 }
 function applyGames(a,b){
-  st.games=[a,b]; st.pi=[0,0]; st.ad=null; st.tb=false; st.tbp=[0,0];
+  /* Cantar os games é informação sobre games, não sobre o game em andamento.
+     O ponto só zera quando um game é de fato vencido (winGame) ou o set fecha —
+     senão "estamos 4 a 2" no meio de um 30-15 apagaria o 30-15. */
+  st.games=[a,b];
+  st.tb=false; st.tbp=[0,0];
   if(a===6&&b===6){ st.tb=true; return; }
   if(setComplete(a,b)) closeSet(a>b?0:1);
 }
@@ -736,11 +759,24 @@ function spoken(){
   if(st.tb) return "Tie-break, " + st.tbp[0] + " a " + st.tbp[1];
   return PT[st.pi[0]] + " a " + PT[st.pi[1]];
 }
+var ultimo = {};
+function poe(id, val){
+  val = String(val);
+  var el = $(id);
+  if(ultimo[id]!==undefined && ultimo[id]!==val){
+    el.classList.remove("mudou");
+    void el.offsetWidth;              /* reinicia a animação */
+    el.classList.add("mudou");
+    setTimeout(function(){ el.classList.remove("mudou"); }, 650);
+  }
+  ultimo[id] = val;
+  el.textContent = val;
+}
 function render(){
   for(var k=0;k<2;k++){
-    $("s"+k).textContent = st.sets[k];
-    $("g"+k).textContent = st.tb ? "6" : st.games[k];
-    $("p"+k).textContent = ptLabel(k);
+    poe("s"+k, st.sets[k]);
+    poe("g"+k, st.tb ? "6" : st.games[k]);
+    poe("p"+k, ptLabel(k));
   }
   $("tbflag").hidden = !st.tb;
   $("jogo-fmt").textContent = "no edge · melhor de 3" + (st.tb ? "  ·  tie-break até " + tbTarget() : "");
@@ -1169,11 +1205,12 @@ $("copy").onclick=function(){
 };
 $("ost").onchange=function(){ cfg.superTb=this.checked; render(); salvar(); };
 $("oshot").onchange=function(){ cfg.oneShot=this.checked; if(on) stop(); micLabel(); salvar(); };
+$("osolo").onchange=function(){ cfg.soloEmpate=this.checked; salvar(); };
 $("oorder").onchange=function(){ cfg.invert=this.checked; salvar(); };
 $("otts").onchange=function(){ cfg.tts=this.checked; salvar(); };
 
 restaurado = carregar();
-$("oshot").checked=cfg.oneShot; $("ost").checked=cfg.superTb;
+$("oshot").checked=cfg.oneShot; $("ost").checked=cfg.superTb; $("osolo").checked=cfg.soloEmpate;
 $("oorder").checked=cfg.invert; $("otts").checked=cfg.tts;
 advise(); setDiag("");
 if(restaurado){ pintarLog(); } else { seedLog(); }
