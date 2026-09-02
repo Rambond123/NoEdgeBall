@@ -442,23 +442,39 @@ function stripSide(s){
    já cai na normalização; aqui desfazemos a colagem, mas só quando o corte dá valores
    que existem no tênis — assim "15" continua sendo 15 e não vira 1 e 5. */
 var PTSET = {"0":1,"15":1,"30":1,"40":1};
-function splitGlued(w){
-  if(!/^\d{2,4}$/.test(w)) return null;
-  if(PTSET[w]) return null;
-  for(var i=1;i<w.length;i++){
-    var a=w.slice(0,i), b=w.slice(i);
-    if(PTSET[a] && PTSET[b]) return [a,b];
+/* O reconhecedor cola números sem piedade: "quinze trinta" volta "1530", e
+   "três a três, quarenta" volta "3 a 340" — game grudado no ponto. Então não dá
+   para cortar ao meio: é preciso achar a divisão em valores que existem no tênis.
+   Programação dinâmica escolhendo a decomposição com menos pedaços, e no empate
+   a que contém mais valores de ponto (15/30/40 valem mais que dígitos soltos). */
+function decompor(w){
+  if(!/^\d{1,5}$/.test(w)) return null;
+  if(PTSET[w]) return null;                    /* 15, 30, 40 e 0 são inteiros */
+  var n=w.length, m=new Array(n+1);
+  m[0]={p:[],np:0};
+  for(var i=1;i<=n;i++){
+    var best=null;
+    for(var L=1; L<=2 && L<=i; L++){
+      var t=w.slice(i-L,i), ehPt=PTSET[t]===1, ehGm=(L===1);
+      if(!ehPt && !ehGm) continue;
+      var ant=m[i-L];
+      if(!ant) continue;
+      var c={p:ant.p.concat([t]), np:ant.np + ((ehPt&&L===2)?1:0)};
+      if(!best || c.p.length<best.p.length || (c.p.length===best.p.length && c.np>best.np)) best=c;
+    }
+    m[i]=best;
   }
-  if(w.length===2 && +w[0]<=7 && +w[1]<=7) return [w[0], w[1]];   /* games colados: "43" */
-  return null;
+  var r=m[n];
+  if(!r || r.p.length<2 || r.p.length>4) return null;
+  return r.p;
 }
 var lastGlue = "";
 function unglue(x){
   lastGlue = "";
   var t=x.split(" "), out=[];
   for(var i=0;i<t.length;i++){
-    var sp = splitGlued(t[i]);
-    if(sp){ lastGlue = t[i] + " → " + sp.join(" "); out.push(sp[0], sp[1]); }
+    var sp = decompor(t[i]);
+    if(sp){ lastGlue = t[i] + " → " + sp.join(" "); out.push.apply(out, sp); }
     else out.push(t[i]);
   }
   return out.join(" ");
@@ -525,6 +541,12 @@ function scoreFrom(s){
   if(n.length>=4 && ehGame(n[0]) && ehGame(n[1]) && n[0].gm===6 && n[1].gm===6
      && n[2].gm!==null && n[3].gm!==null)
     return glued({t:"both", g:[6,6,false], p:ordered(n[2].gm,n[3].gm,s)}, glue);
+
+  /* "3 a 3, 40" — os games vieram inteiros, o segundo número do ponto se perdeu.
+     Aplica o que é certo e diz o que faltou, em vez de inventar o par. */
+  if(n.length===3 && ehGame(n[0]) && ehGame(n[1]) && n[2].pt!==null)
+    return glued({t:"both", g:ordered(n[0].gm,n[1].gm,s), p:null,
+                  meio:"ouvi o ponto " + n[2].pt + " mas faltou o outro número"}, glue);
 
   /* "um a dois, trinta iguais" — o empate encurta o último par */
   if(temIguais && n.length>=3 && ehGame(n[0]) && ehGame(n[1]) && n[2].pt!==null)
@@ -649,10 +671,12 @@ function act(p){
   }
   if(p.t==="both"){
     applyGames(p.g[0], p.g[1]);
-    if(st.over===null){
+    if(p.p && st.over===null){
       if(st.tb) applyTb(p.p[0], p.p[1]); else applyPts(p.p[0], p.p[1]);
     }
-    return placarTxt("games", p.g[0], p.g[1]) + (st.tb ? "  ·  tie-break " : "  ·  ponto ") + p.p[0] + " × " + p.p[1]
+    return placarTxt("games", p.g[0], p.g[1])
+         + (p.p ? (st.tb ? "  ·  tie-break " : "  ·  ponto ") + p.p[0] + " × " + p.p[1] : "")
+         + (p.meio ? "  ·  " + p.meio : "")
          + (p.g[2] ? " · o primeiro número que você falou era do " + shortName(1) : "")
          + (p.glue ? " · separei " + p.glue : "");
   }
