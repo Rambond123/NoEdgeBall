@@ -355,11 +355,16 @@ footer a{color:var(--ink-2)}
         <ul>
           <li><span class="say">quinze zero</span> por padrão o nosso vem primeiro</li>
           <li><span class="say">trinta a quinze pra eles</span> o lado falado inverte a ordem</li>
-          <li><span class="say">15 a</span> só o quinze aceita o "a" solto</li>
-          <li><span class="say">30 iguais</span> · <span class="say">iguais em 40</span> · <span class="say">empate em 30</span></li>
+          <li><span class="say">iguais em 30</span> · <span class="say">empate em 40</span> <strong>a ordem melhor</strong></li>
           <li><span class="say">30 pros dois</span> · <span class="say">40 pra ambos</span> · <span class="say">30 cada um</span></li>
-          <li><span class="say">está 30 a 30</span> dizer os dois números sempre funciona</li>
+          <li><span class="say">está 30 a 30</span> dizer os dois números nunca falha</li>
+          <li><span class="say">15 a</span> só o quinze aceita o "a" solto</li>
           <li>Um número sozinho <strong>não</strong> registra — o log lembra a forma certa</li>
+        </ul>
+        <h3>Por que "30 iguais" falha</h3>
+        <ul>
+          <li>Falado, <em>"trinta iguais"</em> soa como <em>"trinta e dois"</em> — e o reconhecedor devolve <strong>32</strong>, que também é um placar possível. <em>"quinze iguais"</em> vira <em>"quinziguais"</em> e não vira nada.</li>
+          <li>Pondo a palavra na frente — <span class="say">iguais em 30</span> — a elisão desaparece. O app ainda aceita <span class="say">30 iguais</span>, mas prefira a outra ordem.</li>
           <li><span class="say">quarenta iguais</span> · <span class="say">no edge</span> ponto decisivo</li>
           <li><span class="say">está 15 a 15</span> · <span class="say">placar 30 a 15</span> palavras em volta são ignoradas</li>
         </ul>
@@ -934,13 +939,23 @@ function advise(bloqueado){
   if(msg){ box.innerHTML=msg; box.hidden=false; } else { box.hidden=true; }
 }
 
+/* "trinta iguais" soa como "trinta e dois" e volta como "32" — que também é um placar
+   válido (games 3-2). Quando duas hipóteses do reconhecedor fazem sentido, a que traz
+   uma palavra explícita ("iguais", "pros dois", "game") ganha da que é só número:
+   ninguém alucina a palavra, mas o número composto sai de qualquer elisão. */
+var PALAVRA_FORTE = /\b(iguais|igual|igualado|igualados|igualada|igualadas|empate|empatado|empatados|empatada|empatadas|deuce|ambos|ambas|game|games|ponto|pontos|placar|marcador|desfazer|zerar|reiniciar|edge|vantagem|set|sets|contra|versus)\b|\b(?:pros?|pras?|para|pro|pra)\s+(?:os\s+|as\s+)?(?:dois|2|ambos|ambas|lados)\b|\bcada\s+(?:um|lado)\b|\btodo\s+mundo\b/;
+function forcaDaAlt(txt){ return PALAVRA_FORTE.test(norm(txt)) ? 2 : 1; }
+
 function handleFinal(alts){
   heardN++;
-  var chosen=null, p=null, ai=0;
+  var chosen=null, p=null, ai=0, melhorForca=-1, forte=false;
   for(var i=0;i<alts.length;i++){
     var cand = parse(alts[i]);
-    if(cand && cand.t!=="amb"){ chosen=alts[i]; p=cand; ai=i; break; }
-    if(cand && cand.t==="amb" && !p){ chosen=alts[i]; p=cand; ai=i; }
+    if(!cand) continue;
+    if(cand.t==="amb"){ if(!p){ chosen=alts[i]; p=cand; ai=i; } continue; }
+    var f = forcaDaAlt(alts[i]);
+    if(p && p.t!=="amb" && f<=melhorForca) continue;
+    chosen=alts[i]; p=cand; ai=i; melhorForca=f; forte=(f===2);
   }
   if(!p){
     var outras = alts.slice(1).map(function(x){ return '"'+x+'"'; }).join(", ");
@@ -954,7 +969,7 @@ function handleFinal(alts){
   salvar();
   if(p.t!=="say") speak(spoken());
   var extra = "";
-  if(ai>0) extra = '  · descartei a hipótese 1: "' + alts[0] + '"';
+  if(ai>0) extra = '  · descartei a hipótese 1: "' + alts[0] + '"' + (forte ? " (esta trazia a palavra por extenso)" : "");
   logRow(chosen, msg + extra, "ok", "ok");
 }
 
