@@ -281,10 +281,10 @@ footer a{color:var(--ink-2)}
       <div class="grid">
         <span class="hd">Dupla</span><span class="hd">Set</span><span class="hd">Game</span><span class="hd">Ponto</span>
         <div class="rule"></div>
-        <input class="name" id="n0" value="TIME 1" aria-label="Sua dupla (dono do relógio)" spellcheck="false">
+        <input class="name" id="n0" value="A" aria-label="Dupla A (dono do relógio)" spellcheck="false">
         <span class="num" id="s0">0</span><span class="num" id="g0">4</span><span class="num pt" id="p0">30</span>
         <div class="rule"></div>
-        <input class="name" id="n1" value="TIME 2" aria-label="Dupla adversária" spellcheck="false">
+        <input class="name" id="n1" value="B" aria-label="Dupla B" spellcheck="false">
         <span class="num" id="s1">0</span><span class="num" id="g1">3</span><span class="num pt" id="p1">15</span>
         <div class="sets-line" id="sets">sets encerrados: —</div>
       </div>
@@ -345,11 +345,13 @@ footer a{color:var(--ink-2)}
     <section class="panel">
       <div class="panel-head"><span class="panel-title">O que ele entende</span></div>
       <div class="gram">
-        <h3>Começar a partida</h3>
+        <h3>Os dois lados</h3>
         <ul>
-          <li><span class="say">Lucas e Jeferson contra Átila e Pedro</span></li>
-          <li>Sem falar nada, é <strong>Time 1</strong> × <strong>Time 2</strong>. O time 1 é sempre o dono do relógio.</li>
-          <li>Depois de nomear, o nome vira lado: <span class="say">ponto pro Átila</span></li>
+          <li>Por padrão as duplas são <strong>A</strong> e <strong>B</strong> — o A é sempre o dono do relógio.</li>
+          <li><span class="say">ponto pro A</span> · <span class="say">ponto pra B</span> · <span class="say">game do A</span> · <span class="say">ponto pro time B</span></li>
+          <li>A letra só conta como lado depois de <em>pra, pro, do, time, dupla, lado</em> — senão o "a" de <em>"trinta a quinze"</em> viraria time.</li>
+          <li>Sinônimos que nunca falham: <span class="say">ponto pro azul</span> (A) · <span class="say">ponto pro laranja</span> (B) · <span class="say">ponto pra cá</span> / <span class="say">pra lá</span></li>
+          <li>Ou nomeie: <span class="say">Lucas e Jeferson contra Átila e Pedro</span> — os nomes viram lado.</li>
         </ul>
         <h3>Placar do game (estado absoluto)</h3>
         <ul>
@@ -436,18 +438,29 @@ var players = [[],[]];
 var PRON1 = /\b(deles|dele|delas|dela|eles|elas|adversario|adversarios|adversaria|seu|sua|outro lado|time dois|time 2)\b/;
 var PRON0 = /\b(nosso|nossa|nossos|nossas|nos|meu|minha|eu|favor|time um|time 1)\b/;
 
+/* Times A e B. O "a" sozinho é a preposição mais comum do placar ("trinta a quinze"),
+   então a letra só conta como time quando vem depois de um marcador — "pra A", "do A",
+   "time A". O "b" não tem esse problema e é aceito mais solto.
+   Cor e direção entram como sinônimos: são palavras longas, que o reconhecedor não perde. */
+var MARC = "(?:pra|para|pro|pros|pras|do|da|de|no|na|time|dupla|lado|equipe|ponto|game)";
+var LADO_A = new RegExp("\\b" + MARC + "\\s+(?:a|ah|ha)\\b|\\b(?:azul|azuis|esquerda|ca)\\b");
+var LADO_B = new RegExp("\\b" + MARC + "\\s+(?:b|be|bee|beh|bh)\\b|\\b(?:laranja|direita|la)\\b");
+
 function side(s){
   for(var t=0;t<2;t++) for(var i=0;i<players[t].length;i++){
     var nm=players[t][i];
     if(nm.length>2 && new RegExp("\\b"+nm+"\\b").test(s)) return t;
   }
+  if(LADO_B.test(s)) return 1;
+  if(LADO_A.test(s)) return 0;
   if(PRON1.test(s)) return 1;
   if(PRON0.test(s)) return 0;
   return null;
 }
 /* Tira do texto tudo que aponta um lado, para sobrarem só os números. */
 function stripSide(s){
-  var x = s.replace(/\b(?:pra|para|pro|pros|pras)\s+/g," ").replace(PRON1," ").replace(PRON0," ");
+  var x = s.replace(LADO_A," ").replace(LADO_B," ")
+           .replace(/\b(?:pra|para|pro|pros|pras)\s+/g," ").replace(PRON1," ").replace(PRON0," ");
   for(var t=0;t<2;t++) for(var i=0;i<players[t].length;i++){
     var nm=players[t][i];
     if(nm.length>2) x = x.replace(new RegExp("\\b"+nm+"\\b","g")," ");
@@ -780,14 +793,14 @@ function labelButtons(){
 }
 function shortName(k){
   var v=($("n"+k).value||"").trim();
-  if(!v) return k? "Time 2":"Time 1";
+  if(!v) return k? "B":"A";
   if(v.length<=9) return v;
   return v.split(/\s+/)[0];
 }
 
 /* ============ render ============ */
 var $ = function(id){ return document.getElementById(id); };
-function nameOf(k){ return ($("n"+k).value || (k?"TIME 2":"TIME 1")).trim(); }
+function nameOf(k){ return ($("n"+k).value || (k?"B":"A")).trim(); }
 function ptLabel(k){
   if(st.over!==null) return k===st.over ? "★" : "–";
   if(st.tb) return String(st.tbp[k]);
