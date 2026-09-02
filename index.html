@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1E24">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>NoEdgeBall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F1F4F3; --surface:#FFFFFF; --surface-2:#E9EEEC;
+  --ink:#10262E; --ink-2:#4A6169; --ink-3:#7C9298;
+  --line:#D6DFDD;
+  --accent:#FF6B2C; --accent-soft:rgba(255,107,44,.14);
+  --us:#0E7C86; --them:#B4692A;
+  --ok:#2C7A4E; --warn:#A8621C; --bad:#B3261E;
+  --board:#0B1E24; --board-2:#132B33; --board-ink:#F1F4F3; --board-dim:#6E8A92;
+  --shadow:0 1px 2px rgba(16,38,46,.06), 0 8px 24px -12px rgba(16,38,46,.22);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0A1216; --surface:#121E23; --surface-2:#18262C;
+    --ink:#E7ECEB; --ink-2:#94A9AF; --ink-3:#6C838A;
+    --line:#22343A;
+    --accent:#FF7C42; --accent-soft:rgba(255,124,66,.16);
+    --us:#35A9B4; --them:#D69C58;
+    --ok:#5CB683; --warn:#D39A55; --bad:#E27469;
+    --board:#08151A; --board-2:#102229; --board-ink:#E7ECEB; --board-dim:#61797F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0A1216; --surface:#121E23; --surface-2:#18262C;
+  --ink:#E7ECEB; --ink-2:#94A9AF; --ink-3:#6C838A;
+  --line:#22343A;
+  --accent:#FF7C42; --accent-soft:rgba(255,124,66,.16);
+  --us:#35A9B4; --them:#D69C58;
+  --ok:#5CB683; --warn:#D39A55; --bad:#E27469;
+  --board:#08151A; --board-2:#102229; --board-ink:#E7ECEB; --board-dim:#61797F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:15px; line-height:1.55; -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:20px 16px 56px; display:flex; flex-direction:column; gap:20px}
+@media (min-width:900px){
+  .wrap{padding:32px 24px 64px}
+  .cols{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; align-items:start}
+  .col{display:flex; flex-direction:column; gap:20px}
+}
+
+/* ---- topo ---- */
+.top{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap}
+h1{
+  font-family:"Bebas Neue", Impact, sans-serif; font-weight:400;
+  font-size:clamp(30px,7vw,44px); letter-spacing:.02em; margin:0; line-height:1;
+}
+.kicker{
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin:0 0 6px;
+}
+.lede{margin:0; color:var(--ink-2); max-width:62ch}
+
+/* ---- placar ---- */
+.board{
+  background:var(--board); color:var(--board-ink); border-radius:14px;
+  padding:16px 16px 14px; box-shadow:var(--shadow); overflow:hidden;
+}
+.board-head{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--board-dim); margin-bottom:12px;
+}
+.tb-flag{color:var(--accent); font-weight:500}
+.grid{display:grid; grid-template-columns:minmax(0,1fr) 44px 44px 84px; align-items:center; gap:6px 8px}
+@media (min-width:420px){.grid{grid-template-columns:minmax(0,1fr) 52px 52px 100px}}
+.grid .hd{
+  font-family:"IBM Plex Mono", monospace; font-size:9.5px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--board-dim); text-align:center;
+}
+.grid .hd:first-child{text-align:left}
+.name{
+  background:transparent; border:0; border-bottom:1px dashed transparent; color:var(--board-ink);
+  font-family:"Bebas Neue", Impact, sans-serif; font-size:26px; letter-spacing:.04em;
+  padding:0; width:100%; min-width:0;
+}
+.name:hover{border-bottom-color:var(--board-dim)}
+.name:focus{outline:none; border-bottom-color:var(--accent)}
+.num{
+  font-family:"Bebas Neue", Impact, sans-serif; text-align:center; font-variant-numeric:tabular-nums;
+  color:var(--board-dim); font-size:24px; line-height:1;
+}
+.num.pt{font-size:clamp(40px,11vw,58px); color:var(--board-ink)}
+.row-us .num.pt{color:var(--us)} .row-them .num.pt{color:var(--them)}
+.rule{grid-column:1/-1; height:1px; background:var(--board-2); margin:6px 0}
+.sets-line{
+  grid-column:1/-1; font-family:"IBM Plex Mono", monospace; font-size:11px;
+  color:var(--board-dim); margin-top:10px; letter-spacing:.04em;
+}
+
+/* ---- microfone ---- */
+.mic-zone{
+  background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:18px 16px; display:flex; flex-direction:column; gap:14px; align-items:center;
+}
+.mic-btn{
+  appearance:none; border:0; cursor:pointer; width:100%; max-width:340px;
+  padding:16px 20px; border-radius:999px; background:var(--ink); color:var(--ground);
+  font-family:"Bebas Neue", Impact, sans-serif; font-size:24px; letter-spacing:.08em;
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  transition:background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.mic-btn:hover{box-shadow:var(--shadow)}
+.mic-btn:focus-visible{outline:3px solid var(--accent); outline-offset:3px}
+.mic-btn[data-on="1"]{background:var(--accent); color:#150802; box-shadow:0 0 0 0 var(--accent-soft); animation:pulse 1.9s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--accent-soft)}70%{box-shadow:0 0 0 18px rgba(255,107,44,0)}100%{box-shadow:0 0 0 0 rgba(255,107,44,0)}}
+@media (prefers-reduced-motion:reduce){.mic-btn[data-on="1"]{animation:none}}
+.dot{width:11px; height:11px; border-radius:50%; background:currentColor; flex:none}
+.interim{
+  font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-3);
+  min-height:20px; text-align:center; width:100%; word-break:break-word;
+}
+.interim strong{color:var(--ink); font-weight:500}
+.diag{
+  font-family:"IBM Plex Mono", monospace; font-size:11.5px; line-height:1.6; color:var(--ink-2);
+  background:var(--surface-2); border:1px solid var(--line); border-radius:9px;
+  padding:9px 11px; width:100%; word-break:break-word;
+}
+.diag b{color:var(--ink); font-weight:500}
+.diag .bad{color:var(--bad); font-weight:500}
+.diag .ok{color:var(--ok)}
+.manual{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%}
+.btn{
+  appearance:none; cursor:pointer; background:var(--surface-2); color:var(--ink);
+  border:1px solid var(--line); border-radius:9px; padding:9px 12px;
+  font-family:"IBM Plex Sans", sans-serif; font-size:13px; font-weight:500;
+}
+.btn:hover{border-color:var(--ink-3)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.btn.us{color:var(--us)} .btn.them{color:var(--them)}
+
+/* ---- modo jogo: tela cheia, placar gigante, nada de diagnóstico ---- */
+.jogo-bar{display:none}
+body.jogo{overflow:hidden}
+body.jogo .wrap{max-width:none; padding:0; gap:0; height:100dvh; display:flex; flex-direction:column}
+body.jogo .esconde{display:none !important}
+body.jogo .cols{display:flex; flex-direction:column; flex:1; min-height:0; gap:0}
+body.jogo .col{flex:1; min-height:0; gap:0; display:flex; flex-direction:column}
+body.jogo .jogo-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--board); color:var(--board-dim); padding:8px 14px;
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+}
+body.jogo .jogo-bar button{
+  appearance:none; background:transparent; border:1px solid var(--board-2); color:var(--board-dim);
+  border-radius:6px; padding:4px 9px; font-size:11px; cursor:pointer;
+  font-family:"IBM Plex Mono", monospace; letter-spacing:.08em;
+}
+body.jogo .board{border-radius:0; box-shadow:none; flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; padding:8px 16px}
+body.jogo .board-head{display:none}
+body.jogo .grid{grid-template-columns:minmax(0,1fr) 40px 46px 32vw; gap:2px 8px}
+body.jogo .num{font-size:clamp(20px,5vw,30px)}
+body.jogo .num.pt{font-size:clamp(52px,19vw,120px); line-height:.86}
+body.jogo .name{font-size:clamp(19px,5.5vw,34px)}
+body.jogo .sets-line{font-size:10.5px; margin-top:6px}
+body.jogo .mic-zone{border-radius:0; border:0; border-top:1px solid var(--line); padding:12px 14px calc(12px + env(safe-area-inset-bottom)); gap:10px}
+body.jogo .mic-btn{font-size:30px; padding:22px; max-width:none}
+body.jogo .interim{font-size:14px}
+body.jogo .manual{gap:6px}
+body.jogo .btn{padding:11px 14px; font-size:14px}
+
+/* ---- painéis ---- */
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px 14px; border-bottom:1px solid var(--line);
+}
+.panel-title{
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3);
+}
+.hit{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.hit b{color:var(--ink); font-weight:500}
+
+/* ---- log ---- */
+.log{max-height:min(52vh,420px); overflow-y:auto; padding:4px 0}
+.entry{display:grid; grid-template-columns:52px minmax(0,1fr); gap:10px; padding:9px 14px; border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:0}
+.entry .t{font-family:"IBM Plex Mono", monospace; font-size:11px; color:var(--ink-3); padding-top:2px; font-variant-numeric:tabular-nums}
+.heard{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink); word-break:break-word}
+.did{font-size:12.5px; color:var(--ink-2); margin-top:2px; display:flex; gap:7px; align-items:baseline; flex-wrap:wrap}
+.tag{
+  font-family:"IBM Plex Mono", monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  padding:1px 6px; border-radius:4px; border:1px solid currentColor; flex:none;
+}
+.ignore{
+  appearance:none; cursor:pointer; background:transparent; border:1px dashed var(--line);
+  color:var(--ink-3); border-radius:5px; padding:0 6px; font-size:11px;
+  font-family:"IBM Plex Sans", sans-serif;
+}
+.ignore:hover{color:var(--ink-2); border-color:var(--ink-3)}
+.entry.ignored{opacity:.45}
+.entry.ignored .heard{text-decoration:line-through}
+.tag.ok{color:var(--ok)} .tag.no{color:var(--bad)} .tag.amb{color:var(--warn)} .tag.ex{color:var(--ink-3)}
+.empty{padding:20px 14px; color:var(--ink-3); font-size:13px}
+
+/* ---- gramática ---- */
+.gram{padding:4px 14px 14px}
+.gram h3{
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-3); margin:14px 0 7px; font-weight:400;
+}
+.gram ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px}
+.gram li{display:flex; gap:10px; align-items:baseline; font-size:13px; color:var(--ink-2)}
+.say{
+  font-family:"IBM Plex Mono", monospace; font-size:12.5px; color:var(--ink);
+  background:var(--surface-2); border-radius:5px; padding:1px 6px; flex:none;
+}
+
+/* ---- ajustes ---- */
+details{border-top:1px solid var(--line)}
+details summary{
+  cursor:pointer; padding:12px 14px; font-family:"IBM Plex Mono", monospace;
+  font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3);
+}
+details summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+.opts{padding:2px 14px 16px; display:flex; flex-direction:column; gap:10px}
+.opt{display:flex; gap:9px; align-items:flex-start; font-size:13.5px}
+.opt input{margin:3px 0 0; accent-color:var(--accent); flex:none}
+.opt span small{display:block; color:var(--ink-3); font-size:12px; line-height:1.4}
+
+.note{font-size:13px; color:var(--ink-2); padding:0 14px 16px}
+.note a{color:var(--accent)}
+.warn-box{
+  background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px;
+  padding:11px 13px; font-size:13px; color:var(--ink);
+}
+footer{color:var(--ink-3); font-size:12.5px; border-top:1px solid var(--line); padding-top:14px}
+footer a{color:var(--ink-2)}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <div class="jogo-bar"><span id="jogo-fmt">no edge</span><button id="sairjogo">sair do modo jogo</button></div>
+
+  <header class="top esconde">
+    <div>
+      <p class="kicker">Cante o placar · o marcador acompanha</p>
+      <h1>NoEdgeBall</h1>
+    </div>
+  </header>
+  <p class="lede esconde">Você canta o placar como cantaria na quadra — <em>"trinta quinze"</em>, <em>"15 a"</em>, <em>"30 a 15 pra eles"</em>, <em>"game deles"</em> — e o marcador acompanha. Cada frase descreve o jogo inteiro, então um erro de reconhecimento se corrige sozinho na frase seguinte.</p>
+
+  <div class="cols">
+   <div class="col">
+
+    <section class="board" aria-label="Placar">
+      <div class="board-head">
+        <span id="fmt">no edge · melhor de 3</span>
+        <span class="tb-flag" id="tbflag" hidden>tie-break</span>
+      </div>
+      <div class="grid">
+        <span class="hd">Dupla</span><span class="hd">Set</span><span class="hd">Game</span><span class="hd">Ponto</span>
+        <div class="rule"></div>
+        <input class="name" id="n0" value="TIME 1" aria-label="Sua dupla (dono do relógio)" spellcheck="false">
+        <span class="num" id="s0">0</span><span class="num" id="g0">4</span><span class="num pt" id="p0">30</span>
+        <div class="rule"></div>
+        <input class="name" id="n1" value="TIME 2" aria-label="Dupla adversária" spellcheck="false">
+        <span class="num" id="s1">0</span><span class="num" id="g1">3</span><span class="num pt" id="p1">15</span>
+        <div class="sets-line" id="sets">sets encerrados: —</div>
+      </div>
+    </section>
+
+    <section class="mic-zone">
+      <button class="mic-btn" id="mic" data-on="0"><span class="dot"></span><span id="miclabel">Ouvir</span></button>
+      <div class="interim" id="interim">Toque e cante uma frase do placar.</div>
+      <div class="diag esconde" id="diag"></div>
+      <div class="manual">
+        <button class="btn" id="undo">↩ Desfazer</button>
+        <button class="btn us" id="pus">+ ponto nós</button>
+        <button class="btn them" id="pthem">+ ponto eles</button>
+        <button class="btn" id="reset">Zerar</button>
+        <button class="btn esconde" id="testamic">Testar microfone</button>
+        <button class="btn esconde" id="copiadiag">Copiar diagnóstico</button>
+        <button class="btn esconde" id="entrarjogo">⛶ Modo jogo</button>
+      </div>
+      <div class="warn-box" id="unsupported" hidden></div>
+    </section>
+
+    <section class="panel esconde">
+      <details open>
+        <summary>Ajustes</summary>
+        <div class="opts">
+          <label class="opt"><input type="checkbox" id="ost" checked><span>Super tie-break no 3º set<small>Terceiro set decidido em tie-break até 10 pontos.</small></span></label>
+          <label class="opt"><input type="checkbox" id="oshot" checked><span>Escutar só ao tocar (padrão)<small>Ouve uma frase e desliga — é assim que vai funcionar no relógio, com o gesto do punho abrindo a janela de escuta. Desmarcar liga a escuta contínua, que no Chrome do Android religa a cada frase e pode pedir confirmação toda vez.</small></span></label>
+          <label class="opt"><input type="checkbox" id="oorder"><span>Primeiro número é o deles<small>Padrão: o primeiro número que você fala é o nosso. Dizer "pra eles" ou "pra nós" na frase manda mais que este ajuste.</small></span></label>
+          <label class="opt"><input type="checkbox" id="otts"><span>Confirmação falada<small>O app repete o placar aplicado. Cuidado: o microfone escuta a própria voz do aparelho.</small></span></label>
+        </div>
+      </details>
+      <p class="note">Formato e regras seguem o que você marcar aqui — o texto oficial está nas <a href="https://www.itftennis.com/media/13855/rules-of-beach-tennis-2025.pdf" target="_blank" rel="noopener">Rules of Beach Tennis da ITF</a>.</p>
+    </section>
+
+   </div>
+   <div class="col esconde">
+
+    <section class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Diagnóstico</span>
+        <span class="hit" id="hit"><b>0</b>/0 entendidas</span>
+      </div>
+      <div class="log" id="log"></div>
+      <div class="panel-head" style="border-bottom:0; border-top:1px solid var(--line)">
+        <button class="btn" id="copy">Copiar log</button>
+        <button class="btn" id="clearlog">Limpar</button>
+      </div>
+    </section>
+
+    <section class="panel" id="pnl-hist" hidden>
+      <div class="panel-head">
+        <span class="panel-title">Partidas anteriores</span>
+        <button class="btn" id="limpahist">Limpar</button>
+      </div>
+      <div id="hist"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><span class="panel-title">O que ele entende</span></div>
+      <div class="gram">
+        <h3>Começar a partida</h3>
+        <ul>
+          <li><span class="say">Lucas e Jeferson contra Átila e Pedro</span></li>
+          <li>Sem falar nada, é <strong>Time 1</strong> × <strong>Time 2</strong>. O time 1 é sempre o dono do relógio.</li>
+          <li>Depois de nomear, o nome vira lado: <span class="say">ponto pro Átila</span></li>
+        </ul>
+        <h3>Placar do game (estado absoluto)</h3>
+        <ul>
+          <li><span class="say">quinze zero</span> por padrão o nosso vem primeiro</li>
+          <li><span class="say">trinta a quinze pra eles</span> o lado falado inverte a ordem</li>
+          <li><span class="say">15 a</span> · <span class="say">30 a</span> · <span class="say">40 a</span> empate naquele número</li>
+          <li><span class="say">quarenta iguais</span> · <span class="say">no edge</span> ponto decisivo</li>
+          <li><span class="say">está 15 a 15</span> · <span class="say">placar 30 a 15</span> palavras em volta são ignoradas</li>
+        </ul>
+        <h3>Games e sets</h3>
+        <ul>
+          <li><span class="say">game nosso</span> fecha o game</li>
+          <li><span class="say">está 2 a 2</span> · <span class="say">placar 2 a 1</span> número inteiro = games</li>
+          <li><span class="say">seis quatro</span> encerra o set</li>
+          <li><span class="say">1, 2, 30 x 30</span> games e placar do game numa frase só</li>
+          <li><span class="say">6 6 5 3</span> em 6–6, o segundo par é o tie-break</li>
+        </ul>
+        <h3>Comandos</h3>
+        <ul>
+          <li><span class="say">ponto nosso</span> soma um ponto</li>
+          <li><span class="say">desfazer</span> volta uma jogada</li>
+          <li><span class="say">zerar</span> reinicia a partida</li>
+          <li><span class="say">placar</span> fala o placar em voz alta</li>
+        </ul>
+      </div>
+    </section>
+
+   </div>
+  </div>
+
+  <footer class="esconde">Protótipo para validar a gramática de voz em português antes de escrever qualquer linha de Android. O reconhecimento aqui é o do navegador (usa rede); no relógio a ideia é o modelo on-device.</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ configuração ============ */
+/* No beach tennis todo game é decidido no "no edge": 40-40 = ponto decisivo, nunca há vantagem. */
+var cfg = { superTb:true, invert:false, tts:false, oneShot:true };
+
+/* ============ estado ============ */
+var PT = [0,15,30,40];
+var st, hist, seeded = true;
+
+function fresh(){
+  return { sets:[0,0], games:[0,0], pi:[0,0], ad:null, tb:false, tbp:[0,0], done:[], over:null };
+}
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function push(){ hist.push(clone(st)); if(hist.length>60) hist.shift(); }
+
+st = fresh(); st.games=[4,3]; st.pi=[2,1];   /* estado de exemplo */
+hist = [];
+
+/* ============ normalização ============ */
+function norm(s){
+  return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/(\d)\s*x\s*(\d)/g,"$1 $2")            /* "30x30" -> "30 30" */
+    .replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();
+}
+var PTW = {zero:0,"0":0,love:0,nada:0,quinze:15,"15":15,trinta:30,"30":30,quarenta:40,"40":40,quarento:40};
+var GMW = {zero:0,"0":0,um:1,uma:1,"1":1,dois:2,duas:2,"2":2,tres:3,"3":3,quatro:4,"4":4,cinco:5,"5":5,
+           seis:6,"6":6,sete:7,"7":7,oito:8,"8":8,nove:9,"9":9,dez:10,"10":10,onze:11,"11":11,doze:12,"12":12};
+var FILLER = {a:1,ao:1,o:1,e:1,x:1,por:1,pra:1,para:1,versus:1,ta:1,esta:1,de:1,da:1,do:1,ai:1,eh:1};
+var GAMEW = /\b(game|games|gueime|geime|gueim|gaime|guem|gueimi|greime|geim)\b/;
+
+/* Palavras que só embrulham o placar: "está 15 a 15", "placar 2 a 1", "game a 15 a 15".
+   Somem antes de ler os números — quem decide ponto x game é o número, não a palavra. */
+var LEAD = /^(?:esta|estao|estamos|ta|tao|to|agora|entao|olha|ó|o|os|a|as|placar|marcador|resultado|jogo|partida|game|games|set|sets|ficou|fica|fico|foi|e|eh|ai|de|no|na)\s+/;
+function stripLead(x){ var prev; do{ prev=x; x=x.replace(LEAD,""); }while(x!==prev); return x; }
+
+/* Times. O time 1 é sempre o dono do relógio. */
+var players = [[],[]];
+var PRON1 = /\b(deles|dele|delas|dela|eles|elas|adversario|adversarios|adversaria|seu|sua|outro lado|time dois|time 2)\b/;
+var PRON0 = /\b(nosso|nossa|nossos|nossas|nos|meu|minha|eu|favor|time um|time 1)\b/;
+
+function side(s){
+  for(var t=0;t<2;t++) for(var i=0;i<players[t].length;i++){
+    var nm=players[t][i];
+    if(nm.length>2 && new RegExp("\\b"+nm+"\\b").test(s)) return t;
+  }
+  if(PRON1.test(s)) return 1;
+  if(PRON0.test(s)) return 0;
+  return null;
+}
+/* Tira do texto tudo que aponta um lado, para sobrarem só os números. */
+function stripSide(s){
+  var x = s.replace(/\b(?:pra|para|pro|pros|pras)\s+/g," ").replace(PRON1," ").replace(PRON0," ");
+  for(var t=0;t<2;t++) for(var i=0;i<players[t].length;i++){
+    var nm=players[t][i];
+    if(nm.length>2) x = x.replace(new RegExp("\\b"+nm+"\\b","g")," ");
+  }
+  return x.replace(/\s+/g," ").trim();
+}
+/* O reconhecedor do Chrome cola números em pt-BR: "quinze trinta" volta como "1530",
+   "trinta trinta" como "3030", e às vezes formatado como moeda ("R$ 15,30"). A pontuação
+   já cai na normalização; aqui desfazemos a colagem, mas só quando o corte dá valores
+   que existem no tênis — assim "15" continua sendo 15 e não vira 1 e 5. */
+var PTSET = {"0":1,"15":1,"30":1,"40":1};
+function splitGlued(w){
+  if(!/^\d{2,4}$/.test(w)) return null;
+  if(PTSET[w]) return null;
+  for(var i=1;i<w.length;i++){
+    var a=w.slice(0,i), b=w.slice(i);
+    if(PTSET[a] && PTSET[b]) return [a,b];
+  }
+  if(w.length===2 && +w[0]<=7 && +w[1]<=7) return [w[0], w[1]];   /* games colados: "43" */
+  return null;
+}
+var lastGlue = "";
+function unglue(x){
+  lastGlue = "";
+  var t=x.split(" "), out=[];
+  for(var i=0;i<t.length;i++){
+    var sp = splitGlued(t[i]);
+    if(sp){ lastGlue = t[i] + " → " + sp.join(" "); out.push(sp[0], sp[1]); }
+    else out.push(t[i]);
+  }
+  return out.join(" ");
+}
+function ord(t,a,b,raw){
+  var v = ordered(a,b,raw);
+  return {t:t, a:v[0], b:v[1], swap:v[2]};
+}
+function nums(s){
+  var out=[], t=s.split(" ");
+  for(var i=0;i<t.length;i++){
+    var w=t[i];
+    if(FILLER[w]) continue;
+    if(PTW.hasOwnProperty(w)) out.push({w:w, pt:PTW[w], gm:GMW.hasOwnProperty(w)?GMW[w]:null});
+    else if(GMW.hasOwnProperty(w)) out.push({w:w, pt:null, gm:GMW[w]});
+  }
+  return out;
+}
+
+/* ============ parser ============ */
+/* Ordem: nomear os times → ler um placar → interpretar um comando.
+   Um placar sempre ganha de um comando: "placar 15 a 15" registra, não pergunta. */
+function parse(raw){
+  var s = norm(raw);
+  if(!s) return null;
+  return teamsFrom(raw, s) || scoreFrom(s) || cmdFrom(s);
+}
+
+/* "Lucas e Jeferson contra Átila e Pedro" — só vale sem nenhum número na frase. */
+function teamsFrom(raw, s){
+  if(nums(s).length) return null;
+  var m = String(raw).match(/^\s*(?:o\s+)?(?:jogo|partida|times|time|quem joga)?[:,\s]*(.{2,60}?)\s+(?:contra|versus|vs\.?|x)\s+(.{2,60}?)\s*$/i);
+  if(!m) return null;
+  var A=m[1].trim(), B=m[2].trim();
+  if(!A || !B) return null;
+  if(/^(ponto|game|placar|set|saque|nada)$/i.test(norm(A))) return null;
+  return {t:"teams", a:A, b:B};
+}
+
+function glued(r, g){ if(g) r.glue=g; return r; }
+function ehGame(x){ return x && x.gm!==null && x.gm<=7; }
+function scoreFrom(s){
+  var bare = unglue(stripSide(stripLead(s)));
+  var glue = lastGlue;
+
+  /* "15 a", "30 a", "40 a" = empate naquele número */
+  var tie = bare.match(/^([a-z0-9]+)\s*(?:a|ha|h|as|ao)$/);
+  if(tie){
+    var tw = tie[1];
+    if(PTW.hasOwnProperty(tw)) return {t:"pts", a:PTW[tw], b:PTW[tw]};
+    /* "um" fora: "uma" cairia aqui e viraria games 1-1 */
+    if(tw!=="um" && GMW.hasOwnProperty(tw) && GMW[tw]<=7) return {t:"gms", a:GMW[tw], b:GMW[tw]};
+  }
+
+  var n = nums(bare);
+  var temIguais = /\b(iguais|igual|deuce|deus|duce|empate|empatado)\b/.test(s);
+
+  /* "1, 2, 30 x 30" = um game a dois, trinta iguais. Quatro números numa frase só:
+     os dois primeiros são games (inteiros baixos), os dois últimos são o placar do game. */
+  if(n.length>=4 && ehGame(n[0]) && ehGame(n[1]) && n[2].pt!==null && n[3].pt!==null)
+    return glued({t:"both", g:ordered(n[0].gm,n[1].gm,s), p:ordered(n[2].pt,n[3].pt,s)}, glue);
+
+  /* "6 6 5 3" — em 6-6 o segundo par é o tie-break, que usa números corridos */
+  if(n.length>=4 && ehGame(n[0]) && ehGame(n[1]) && n[0].gm===6 && n[1].gm===6
+     && n[2].gm!==null && n[3].gm!==null)
+    return glued({t:"both", g:[6,6,false], p:ordered(n[2].gm,n[3].gm,s)}, glue);
+
+  /* "um a dois, trinta iguais" — o empate encurta o último par */
+  if(temIguais && n.length>=3 && ehGame(n[0]) && ehGame(n[1]) && n[2].pt!==null)
+    return {t:"both", g:ordered(n[0].gm,n[1].gm,s), p:[n[2].pt, n[2].pt, false]};
+
+  /* "30 iguais", "quatro iguais" */
+  if(temIguais && n.length){
+    if(n[0].pt!==null) return {t:"pts", a:n[0].pt, b:n[0].pt};
+    if(ehGame(n[0])) return {t:"gms", a:n[0].gm, b:n[0].gm};
+  }
+
+  if(n.length>=2){
+    var a=n[0], b=n[1];
+    /* No tie-break tudo é número corrido. */
+    if(st.tb && a.gm!==null && b.gm!==null) return glued(ord("tbp", a.gm, b.gm, s), glue);
+    /* 0/15/30/40 só existe dentro do game. */
+    if(a.pt!==null && b.pt!==null) return glued(ord("pts", a.pt, b.pt, s), glue);
+    /* Número inteiro baixo é game. */
+    if(a.gm!==null && b.gm!==null && a.gm<=7 && b.gm<=7) return glued(ord("gms", a.gm, b.gm, s), glue);
+  }
+  return null;
+}
+
+function cmdFrom(s){
+  if(/\b(desfazer|desfaz|desfa|volta|voltar|corrigir|corrige|apagar|apaga|errei|erro)\b/.test(s)) return {t:"undo"};
+  if(/\b(zerar|zera|reiniciar|reinicia|reset|resetar|novo jogo|nova partida|partida nova)\b/.test(s)) return {t:"reset"};
+
+  if(/\b(no edge|noedge|edge|edgi|ponto de ouro|ponto decisivo|golden|golden point)\b/.test(s))
+    return {t:"pts", a:40, b:40};
+  if(/\b(vantagem|vantagi|advantage)\b/.test(s))
+    return {t:"pts", a:40, b:40, note:"no beach não há vantagem — registrei 40–40"};
+  if(/\b(iguais|igual|deuce|deus|duce)\b/.test(s)) return {t:"pts", a:40, b:40};
+
+  if(GAMEW.test(s)){
+    var g = side(s);
+    if(g===null) return {t:"amb", why:"game de quem?"};
+    return {t:"game", k:g};
+  }
+  if(/\bpontos?\b/.test(s)){
+    var p = side(s);
+    return {t:"pt1", k:(p===null?0:p), guess:(p===null)};
+  }
+  /* Perguntar o placar é o último recurso: só quando não havia número nenhum. */
+  if(/\b(placar|quanto esta|quanto ta|como esta|qual o placar|marcador)\b/.test(s)) return {t:"say"};
+  return null;
+}
+
+/* ============ motor de escore ============ */
+function idx(v){ var i=PT.indexOf(v); return i<0?0:i; }
+function tbTarget(){ return (cfg.superTb && st.sets[0]+st.sets[1]===2) ? 10 : 7; }
+
+/* Ordem dos números falados. Um marcador de lado na frase manda em tudo:
+   "trinta a quinze pra eles" -> eles 30, nós 15. Sem marcador, vale o padrão. */
+function ordered(a,b,raw){
+  var k = side(raw||"");
+  if(k===1) return [b,a,true];
+  if(k===0) return [a,b,false];
+  return cfg.invert ? [b,a,true] : [a,b,false];
+}
+function applyPts(a,b){ st.pi=[idx(a), idx(b)]; st.ad=null; st.tb=false; }
+function applyTb(a,b){ st.tbp=[a,b]; checkTb(); }
+function addPoint(k){
+  var o = 1-k;
+  if(st.tb){ st.tbp[k]++; checkTb(); return; }
+  if(st.pi[k]===3){ winGame(k); return; }   /* inclui o 40-40: no edge decide */
+  st.pi[k]++;
+}
+function winGame(k){
+  st.games[k]++; st.pi=[0,0]; st.ad=null;
+  checkSet();
+}
+function setComplete(a,b){
+  var hi=Math.max(a,b), lo=Math.min(a,b);
+  if(hi>=6 && hi-lo>=2) return true;
+  if(hi===7 && lo===6) return true;
+  return false;
+}
+function checkSet(){
+  var a=st.games[0], b=st.games[1];
+  if(a===6 && b===6){ st.tb=true; st.tbp=[0,0]; return; }
+  if(setComplete(a,b)) closeSet(a>b?0:1);
+}
+function closeSet(k){
+  st.sets[k]++; st.done.push(st.games[0]+"-"+st.games[1]);
+  st.games=[0,0]; st.pi=[0,0]; st.ad=null; st.tb=false; st.tbp=[0,0];
+  if(st.sets[k]===2){ st.over=k; return; }
+  if(cfg.superTb && st.sets[0]===1 && st.sets[1]===1){ st.tb=true; }
+}
+function checkTb(){
+  var t=tbTarget(), a=st.tbp[0], b=st.tbp[1];
+  if(Math.max(a,b)>=t && Math.abs(a-b)>=2){
+    var k = a>b?0:1;
+    if(cfg.superTb && st.sets[0]===1 && st.sets[1]===1){
+      st.done.push(a+"-"+b); st.sets[k]++; st.over=k; st.tb=false;
+    } else { st.games[k]++; closeSet(k); }
+  }
+}
+function applyGames(a,b){
+  st.games=[a,b]; st.pi=[0,0]; st.ad=null; st.tb=false; st.tbp=[0,0];
+  if(a===6&&b===6){ st.tb=true; return; }
+  if(setComplete(a,b)) closeSet(a>b?0:1);
+}
+
+/* O log escreve sempre com os nomes ao lado dos números. Sem isso, "ponto 15–30"
+   depois de você cantar "30 15 pra eles" parece erro, mesmo estando certo. */
+function placarTxt(rot, a, b){
+  return rot + "  " + shortName(0) + " " + a + " × " + b + " " + shortName(1);
+}
+function swapTxt(p){
+  return p.swap ? " · o primeiro número que você falou era do " + shortName(1) : "";
+}
+function act(p){
+  if(!p) return null;
+  if(p.t==="undo"){ if(hist.length){ st=hist.pop(); return "desfeito"; } return "nada para desfazer"; }
+  if(p.t==="reset"){ push(); st=fresh(); return "partida zerada"; }
+  if(p.t==="say"){ speak(spoken()); return "placar falado"; }
+  if(p.t==="amb") return null;
+  push();
+  if(p.t==="teams"){
+    setTeams(p.a, p.b);
+    return "times: " + $("n0").value + "  ×  " + $("n1").value;
+  }
+  if(p.t==="both"){
+    applyGames(p.g[0], p.g[1]);
+    if(st.over===null){
+      if(st.tb) applyTb(p.p[0], p.p[1]); else applyPts(p.p[0], p.p[1]);
+    }
+    return placarTxt("games", p.g[0], p.g[1]) + (st.tb ? "  ·  tie-break " : "  ·  ponto ") + p.p[0] + " × " + p.p[1]
+         + (p.g[2] ? " · o primeiro número que você falou era do " + shortName(1) : "")
+         + (p.glue ? " · separei " + p.glue : "");
+  }
+  if(p.t==="pts"){ applyPts(p.a,p.b); return placarTxt("ponto", p.a, p.b) + swapTxt(p) + (p.note?" · "+p.note:"") + (p.glue?" · separei "+p.glue:""); }
+  if(p.t==="tbp"){ applyTb(p.a,p.b); return placarTxt("tie-break", p.a, p.b) + swapTxt(p); }
+  if(p.t==="gms"){ applyGames(p.a,p.b); return placarTxt("games", p.a, p.b) + swapTxt(p) + (p.glue?" · separei "+p.glue:""); }
+  if(p.t==="game"){ if(st.tb){ st.tbp[p.k]+= 0; } winGame(p.k); return "game de " + nameOf(p.k); }
+  if(p.t==="pt1"){ addPoint(p.k); return "ponto para " + nameOf(p.k) + (p.guess?" (lado assumido)":""); }
+  return null;
+}
+
+/* ============ times ============ */
+function tidy(txt){
+  return String(txt).trim().split(/\s+/).map(function(w){
+    var lw=w.toLowerCase();
+    if(lw==="e"||lw==="da"||lw==="de"||lw==="do") return lw;
+    return w.charAt(0).toUpperCase()+w.slice(1);
+  }).join(" ").slice(0,40);
+}
+function nameTokens(txt){
+  return norm(txt).split(" ").filter(function(w){
+    return w.length>2 && w!=="com" && w!=="dos" && w!=="das" && !GMW.hasOwnProperty(w) && !PTW.hasOwnProperty(w);
+  });
+}
+function setTeams(a,b){
+  $("n0").value = tidy(a); $("n1").value = tidy(b);
+  players = [nameTokens(a), nameTokens(b)];
+  fitNames(); labelButtons();
+}
+function fitNames(){
+  for(var k=0;k<2;k++){
+    var el=$("n"+k), L=el.value.length;
+    el.style.fontSize = L>20 ? "13px" : L>14 ? "15px" : L>9 ? "19px" : "26px";
+  }
+}
+function labelButtons(){
+  $("pus").textContent  = "+ " + shortName(0);
+  $("pthem").textContent = "+ " + shortName(1);
+}
+function shortName(k){
+  var v=($("n"+k).value||"").trim();
+  if(!v) return k? "Time 2":"Time 1";
+  if(v.length<=9) return v;
+  return v.split(/\s+/)[0];
+}
+
+/* ============ render ============ */
+var $ = function(id){ return document.getElementById(id); };
+function nameOf(k){ return ($("n"+k).value || (k?"TIME 2":"TIME 1")).trim(); }
+function ptLabel(k){
+  if(st.over!==null) return k===st.over ? "★" : "–";
+  if(st.tb) return String(st.tbp[k]);
+  return String(PT[st.pi[k]]);
+}
+function spoken(){
+  if(st.over!==null) return "Partida encerrada. " + nameOf(st.over) + " venceu.";
+  if(st.tb) return "Tie-break, " + st.tbp[0] + " a " + st.tbp[1];
+  return PT[st.pi[0]] + " a " + PT[st.pi[1]];
+}
+function render(){
+  for(var k=0;k<2;k++){
+    $("s"+k).textContent = st.sets[k];
+    $("g"+k).textContent = st.tb ? "6" : st.games[k];
+    $("p"+k).textContent = ptLabel(k);
+  }
+  $("tbflag").hidden = !st.tb;
+  $("jogo-fmt").textContent = "no edge · melhor de 3" + (st.tb ? "  ·  tie-break até " + tbTarget() : "");
+  $("tbflag").textContent = st.tb ? ("tie-break até " + tbTarget()) : "";
+  $("sets").textContent = st.done.length ? ("sets encerrados: " + st.done.join("  ·  ")) : "sets encerrados: —";
+  $("fmt").textContent = "no edge · melhor de 3" + (cfg.superTb ? " · super tie-break no 3º" : "");
+}
+
+/* ============ log ============ */
+var heardN=0, okN=0;
+function stamp(){ var d=new Date(); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)+":"+("0"+d.getSeconds()).slice(-2); }
+function logRow(text, resultHtml, tagClass, tagText){
+  logLines.push({h:stamp(), t:text, d:resultHtml, g:tagText});
+  if(logLines.length>400) logLines.shift();
+  salvar();
+  if(seeded){ $("log").innerHTML=""; seeded=false; }
+  var e=document.createElement("div"); e.className="entry";
+  var t=document.createElement("div"); t.className="t"; t.textContent=stamp();
+  var b=document.createElement("div");
+  var h=document.createElement("div"); h.className="heard"; h.textContent="“"+text+"”";
+  var d=document.createElement("div"); d.className="did";
+  var g=document.createElement("span"); g.className="tag "+tagClass; g.textContent=tagText;
+  var r=document.createElement("span"); r.textContent=resultHtml;
+  d.appendChild(g); d.appendChild(r);
+  if(tagClass==="no"){
+    var ig=document.createElement("button");
+    ig.className="ignore"; ig.textContent="não era comando";
+    ig.onclick=function(){
+      if(e.dataset.ign==="1"){ e.dataset.ign="0"; e.classList.remove("ignored"); heardN++; ig.textContent="não era comando"; }
+      else { e.dataset.ign="1"; e.classList.add("ignored"); heardN--; ig.textContent="fora da conta"; }
+      updHit();
+    };
+    d.appendChild(ig);
+  }
+  b.appendChild(h); b.appendChild(d);
+  e.appendChild(t); e.appendChild(b);
+  $("log").insertBefore(e, $("log").firstChild);
+  updHit();
+}
+function updHit(){
+  $("hit").innerHTML = "<b>"+okN+"</b>/"+heardN+" entendidas" + (heardN>0 ? " · "+Math.round(okN/heardN*100)+"%" : "");
+}
+function seedLog(){
+  var rows=[["trinta quinze","ponto 30–15"],["quatro três","games 4–3"],["trinta a quinze pra eles","ponto 15–30 · invertido"]];
+  var html="";
+  for(var i=rows.length-1;i>=0;i--){
+    html += '<div class="entry"><div class="t">--:--</div><div><div class="heard">“'+rows[i][0]+'”</div>'+
+            '<div class="did"><span class="tag ex">exemplo</span><span>'+rows[i][1]+'</span></div></div></div>';
+  }
+  $("log").innerHTML = html;
+}
+
+/* ============ fala ============ */
+function speak(txt){
+  if(!cfg.tts || !window.speechSynthesis) return;
+  try{ var u=new SpeechSynthesisUtterance(txt); u.lang="pt-BR"; u.rate=1.1; speechSynthesis.speak(u); }catch(e){}
+}
+
+/* ============ reconhecimento ============ */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var rec=null, on=false, lastErr="", micOk=null;
+var restarts=0, lastHeard=0, cycles=0;   /* freio do laço de reinício */
+
+/* Depois de alguns pedidos ignorados, o Chrome passa a negar sozinho e nunca mais pergunta.
+   Por isso consultamos o estado antes: se já está negado, não adianta tentar — tem que
+   destravar no cadeado da barra de endereço. */
+function estadoMic(){
+  return new Promise(function(res){
+    if(!navigator.permissions || !navigator.permissions.query) return res("?");
+    try{
+      navigator.permissions.query({name:"microphone"})
+        .then(function(p){ res(p.state); })
+        .catch(function(){ res("?"); });
+    }catch(e){ res("?"); }
+  });
+}
+function isFramed(){ try{ return window.self!==window.top; }catch(e){ return true; } }
+function isWebView(){
+  var ua=navigator.userAgent||"";
+  return /; wv\)/.test(ua) || /\bwv\b/.test(ua) || (/Version\/[\d.]+ Chrome/.test(ua) && /Android/.test(ua) && !/Chrome\/\d+\.\d+\.\d+\.\d+ Mobile Safari/.test(ua));
+}
+function yn(v){ return v ? '<span class="ok">sim</span>' : '<span class="bad">NÃO</span>'; }
+function setDiag(extra){
+  var L=[];
+  L.push("API de fala: " + (SR ? '<span class="ok">disponível</span>' : '<span class="bad">AUSENTE</span>'));
+  L.push("https: " + yn(window.isSecureContext));
+  L.push("em iframe: " + (isFramed() ? '<span class="bad">sim</span>' : '<span class="ok">não</span>'));
+  L.push("WebView de app: " + (isWebView() ? '<span class="bad">sim</span>' : '<span class="ok">não</span>'));
+  if(micOk!==null) L.push("permissão do mic: " + (micOk ? '<span class="ok">concedida</span>' : '<span class="bad">negada</span>'));
+  if(cycles) L.push("ciclos: " + cycles);
+  if(lastErr) L.push('último erro: <span class="bad">' + lastErr + "</span>");
+  if(extra) L.push("<b>" + extra + "</b>");
+  $("diag").innerHTML = L.join(" &nbsp;·&nbsp; ");
+}
+function advise(bloqueado){
+  var box=$("unsupported"), msg="";
+  if(isFramed()){
+    msg = "<strong>Esta página está dentro de um quadro embutido</strong> — o visualizador da claude.ai faz isso. " +
+          "Quadro embutido não recebe microfone, então o Chrome nem pergunta. " +
+          "Precisa abrir a página <strong>sozinha, em aba própria</strong>.<br><br>" +
+          '<button class="btn" id="abrirfora">Abrir em aba própria</button> ' +
+          '<button class="btn" id="copiarurl">Copiar o endereço da página</button>' +
+          '<div id="urlfora" style="margin-top:8px;font-family:IBM Plex Mono,monospace;font-size:11px;word-break:break-all;color:var(--ink-2)"></div>';
+    box.innerHTML=msg; box.hidden=false;
+    $("abrirfora").onclick=function(){
+      var u=location.href, w=null;
+      try{ w=window.open(u,"_blank"); }catch(e){}
+      if(!w){ try{ window.top.location.href=u; }catch(e){} }
+      if(!w) $("urlfora").textContent="O quadro bloqueou a abertura. Copie o endereço e cole numa aba nova: "+u;
+    };
+    $("copiarurl").onclick=function(){
+      if(navigator.clipboard) navigator.clipboard.writeText(location.href);
+      $("urlfora").textContent=location.href;
+      $("copiarurl").textContent="Copiado";
+    };
+    return;
+  }
+  if(bloqueado){
+    msg = "<strong>O Chrome não vai perguntar nada.</strong> No Android há duas permissões empilhadas — " +
+          "confira nesta ordem:<br><br>" +
+          "<strong>1. O Chrome tem microfone no Android?</strong><br>" +
+          "Configurações do Android → Apps → Chrome → Permissões → Microfone → <strong>Permitir</strong>. " +
+          "Essa é a que mais trava, e ela não aparece dentro do Chrome.<br><br>" +
+          "<strong>2. A página está numa aba própria?</strong><br>" +
+          "Dentro de um app ou de um quadro embutido o microfone é negado sem perguntar. " +
+          "Veja o campo <em>em iframe</em> aqui embaixo: se disser <em>sim</em>, abra o endereço numa aba do Chrome.<br><br>" +
+          "<strong>3. O site está na lista de bloqueados?</strong><br>" +
+          "Chrome → ⋮ → Configurações → Configurações do site → Microfone → procurar claude.ai.";
+    box.innerHTML=msg; box.hidden=false; return;
+  }
+  if(!SR){
+    msg = isWebView()
+      ? "Você abriu dentro do <strong>WebView de um app</strong>. O Android não expõe reconhecimento de fala aí. Abra este endereço no <strong>Chrome</strong> — menu do app → abrir no navegador, ou copie o link e cole no Chrome."
+      : "Este navegador não expõe a API de reconhecimento de fala. Use o <strong>Chrome</strong> no Android ou no desktop. No iPhone, o Safari não suporta.";
+  } else if(isFramed()){
+    msg = "A página está dentro de um <strong>iframe</strong>, que costuma bloquear o microfone. Abra o endereço em uma <strong>aba própria do Chrome</strong>.";
+  } else if(!window.isSecureContext){
+    msg = "A página não está em <strong>https</strong>. O microfone só funciona em https ou localhost — abrir o arquivo direto do disco (file://) não funciona.";
+  }
+  if(msg){ box.innerHTML=msg; box.hidden=false; } else { box.hidden=true; }
+}
+
+function handleFinal(alts){
+  heardN++;
+  var chosen=null, p=null, ai=0;
+  for(var i=0;i<alts.length;i++){
+    var cand = parse(alts[i]);
+    if(cand && cand.t!=="amb"){ chosen=alts[i]; p=cand; ai=i; break; }
+    if(cand && cand.t==="amb" && !p){ chosen=alts[i]; p=cand; ai=i; }
+  }
+  if(!p){
+    var outras = alts.slice(1).map(function(x){ return '"'+x+'"'; }).join(", ");
+    logRow(alts[0], "não bateu com nenhuma expressão" + (outras ? " · outras hipóteses: "+outras : ""), "no", "?");
+    return;
+  }
+  if(p.t==="amb"){ logRow(chosen, p.why, "amb", "dúvida"); return; }
+  var msg = act(p);
+  okN++;
+  render();
+  salvar();
+  if(p.t!=="say") speak(spoken());
+  var extra = "";
+  if(ai>0) extra = '  · descartei a hipótese 1: "' + alts[0] + '"';
+  logRow(chosen, msg + extra, "ok", "ok");
+}
+
+function start(){
+  if(!SR){ advise(); setDiag("não dá para iniciar"); return; }
+  try{ rec = new SR(); }
+  catch(e){ lastErr="new SpeechRecognition: "+e.name; setDiag("falhou ao criar o reconhecedor"); advise(); return; }
+  rec.lang="pt-BR"; rec.continuous=!cfg.oneShot; rec.interimResults=true; rec.maxAlternatives=4;
+  rec.onstart=function(){ lastErr=""; setDiag("reconhecedor ativo"); };
+  rec.onaudiostart=function(){ setDiag("captando áudio"); };
+  rec.onspeechstart=function(){ setDiag("voz detectada"); };
+  rec.onresult=function(ev){
+    restarts=0; lastHeard=Date.now();
+    var interim="";
+    for(var i=ev.resultIndex;i<ev.results.length;i++){
+      var r=ev.results[i];
+      if(r.isFinal){
+        var alts=[]; for(var j=0;j<r.length;j++) alts.push(r[j].transcript.trim());
+        handleFinal(alts);
+      } else interim += r[0].transcript;
+    }
+    $("interim").innerHTML = interim ? "<strong>"+interim.replace(/[<>&]/g,"")+"</strong>" : "ouvindo…";
+  };
+  rec.onerror=function(ev){
+    lastErr = ev.error || "desconhecido";
+    if(ev.error==="not-allowed" || ev.error==="service-not-allowed"){
+      stop(); advise(); setDiag("microfone bloqueado pelo navegador");
+      $("interim").textContent="Microfone bloqueado.";
+    } else if(ev.error==="network"){
+      setDiag("sem rede — este reconhecedor precisa de internet");
+    } else if(ev.error==="no-speech"){
+      setDiag("nada ouvido, reiniciando");
+    } else if(ev.error==="aborted"){
+      setDiag("reconhecimento interrompido");
+    } else setDiag("erro: "+ev.error);
+  };
+  rec.onend=function(){
+    if(!on) return;
+    if(cfg.oneShot){ stop(); $("interim").textContent="Toque para escutar o próximo ponto."; return; }
+    restarts++; cycles++;
+    if(cycles>=15){
+      on=false; stop();
+      $("interim").textContent="Parei sozinho.";
+      setDiag("15 religadas nesta sessão — use a escuta por toque, este navegador pede confirmação a cada ciclo");
+      return;
+    }
+    /* O Chrome do Android encerra o reconhecedor a cada frase. Religar sem freio é o que
+       provoca a enxurrada de pedidos de permissão — então espaça e desiste se não ouvir nada. */
+    if(restarts>=8 && Date.now()-lastHeard>25000){
+      on=false; stop();
+      $("interim").textContent="Parei sozinho.";
+      setDiag("reiniciei " + restarts + "x sem ouvir nada — pare de religar e confira a permissão do site");
+      return;
+    }
+    var wait = Math.min(400*restarts, 2500);
+    setDiag("religando em " + (wait/1000).toFixed(1) + "s");
+    setTimeout(function(){ if(on){ try{ rec.start(); }catch(e){ lastErr="restart: "+e.name; } } }, wait);
+  };
+  try{ rec.start(); }
+  catch(e){ lastErr="start: "+e.name; setDiag("não iniciou"); return; }
+  on=true; $("mic").dataset.on="1"; $("miclabel").textContent="Ouvindo"; $("interim").textContent = cfg.oneShot ? "ouvindo uma frase…" : "ouvindo…";
+}
+function micLabel(){ if(!on) $("miclabel").textContent = cfg.oneShot ? "Escutar 1 frase" : "Ouvir"; }
+function stop(){
+  on=false; restarts=0; $("mic").dataset.on="0"; $("miclabel").textContent = cfg.oneShot ? "Escutar 1 frase" : "Ouvir";
+  if(rec){ try{ rec.onend=null; rec.stop(); }catch(e){} }
+  $("interim").textContent="Pausado.";
+  setDiag("");
+}
+/* O reconhecedor abre o microfone sozinho. Chamar getUserMedia antes abria um segundo
+   microfone por ciclo e multiplicava os pedidos de permissão — por isso saiu daqui. */
+function toggle(){
+  if(on){ stop(); return; }
+  if(!SR){ advise(); setDiag("sem API de fala neste navegador"); return; }
+  restarts=0; cycles=0; lastHeard=Date.now();
+
+  estadoMic().then(function(e){
+    if(e==="granted"){ micOk=true; advise(); start(); return; }
+    if(e==="denied"){
+      micOk=false; advise(true);
+      setDiag("permissão negada — destrave no cadeado da barra de endereço");
+      $("interim").textContent="Microfone bloqueado para este site.";
+      return;
+    }
+    /* estado "prompt" ou desconhecido: uma única chamada, dentro do gesto do toque,
+       só para fazer o Chrome perguntar. Solta o microfone em seguida. */
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+      setDiag("pedindo permissão do microfone…");
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        micOk=true;
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        advise(); start();
+      }).catch(function(err){
+        micOk=false; lastErr=err.name||"erro";
+        advise(err.name==="NotAllowedError");
+        setDiag("o navegador recusou o microfone");
+        $("interim").textContent="Sem acesso ao microfone.";
+      });
+    } else { advise(); start(); }
+  });
+}
+
+/* ============ persistência ============ */
+/* Uma partida não pode morrer porque o celular travou a tela ou você trocou de app.
+   Tudo o que importa cabe em duas chaves. */
+var CHAVE="cp.v1.partida", CHAVE_H="cp.v1.historico";
+var logLines=[], restaurado=false;
+
+function salvar(){
+  try{
+    localStorage.setItem(CHAVE, JSON.stringify({
+      st:st, nomes:[$("n0").value, $("n1").value], cfg:cfg,
+      log:logLines.slice(-200), heardN:heardN, okN:okN, quando:Date.now()
+    }));
+  }catch(e){}
+}
+function carregar(){
+  var raw;
+  try{ raw = localStorage.getItem(CHAVE); }catch(e){ return false; }
+  if(!raw) return false;
+  try{
+    var d = JSON.parse(raw);
+    if(!d || !d.st) return false;
+    st = d.st;
+    if(d.nomes){ $("n0").value=d.nomes[0]; $("n1").value=d.nomes[1];
+                 players=[nameTokens(d.nomes[0]), nameTokens(d.nomes[1])]; }
+    if(d.cfg){ for(var k in d.cfg) if(cfg.hasOwnProperty(k)) cfg[k]=d.cfg[k]; }
+    logLines = d.log || [];
+    heardN = d.heardN||0; okN = d.okN||0;
+    return true;
+  }catch(e){ return false; }
+}
+function pintarLog(){
+  if(!logLines.length){ $("log").innerHTML='<div class="empty">Sem frases registradas ainda.</div>'; return; }
+  var h="";
+  for(var i=logLines.length-1;i>=0;i--){
+    var L=logLines[i];
+    h += '<div class="entry"><div class="t">'+L.h+'</div><div><div class="heard">“'+esc(L.t)+'”</div>'+
+         '<div class="did"><span class="tag '+(L.g==="ok"?"ok":L.g==="?"?"no":"amb")+'">'+esc(L.g)+'</span>'+
+         '<span>'+esc(L.d)+'</span></div></div></div>';
+  }
+  $("log").innerHTML=h; seeded=false;
+}
+function esc(x){ return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function temPartida(){
+  return st.sets[0]||st.sets[1]||st.games[0]||st.games[1]||st.pi[0]||st.pi[1]||st.done.length||logLines.length;
+}
+function textoDoLog(linhas){
+  return linhas.map(function(L){ return L.h+"  “"+L.t+"”  ->  "+L.g+" "+L.d; }).join("\n");
+}
+function arquivar(){
+  if(!temPartida()) return;
+  var resumo = st.done.length ? st.done.join(", ") : (st.games[0]+"-"+st.games[1]);
+  var h=[];
+  try{ h = JSON.parse(localStorage.getItem(CHAVE_H)||"[]"); }catch(e){}
+  h.unshift({ d:new Date().toISOString().slice(0,10), hora:stamp().slice(0,5),
+              nomes:[$("n0").value,$("n1").value], placar:resumo,
+              acerto:(heardN? Math.round(okN/heardN*100):0), n:heardN, log:logLines.slice(-300) });
+  if(h.length>40) h.length=40;
+  try{ localStorage.setItem(CHAVE_H, JSON.stringify(h)); }catch(e){}
+  pintarHist();
+}
+function pintarHist(){
+  var h=[];
+  try{ h = JSON.parse(localStorage.getItem(CHAVE_H)||"[]"); }catch(e){}
+  $("pnl-hist").hidden = !h.length;
+  if(!h.length) return;
+  var out="";
+  for(var i=0;i<h.length;i++){
+    var p=h[i];
+    out += '<div class="entry"><div class="t">'+p.d.slice(5)+'</div><div>'+
+           '<div class="heard">'+esc(p.nomes[0])+' × '+esc(p.nomes[1])+'  ·  '+esc(p.placar)+'</div>'+
+           '<div class="did"><span>'+p.acerto+'% de acerto em '+p.n+' frases</span>'+
+           '<button class="ignore" data-i="'+i+'">copiar log</button></div></div></div>';
+  }
+  $("hist").innerHTML=out;
+  var bs=$("hist").querySelectorAll("button");
+  for(var j=0;j<bs.length;j++) bs[j].onclick=function(){
+    var idx=+this.dataset.i, arq=[];
+    try{ arq=JSON.parse(localStorage.getItem(CHAVE_H)||"[]"); }catch(e){}
+    var p=arq[idx]; if(!p) return;
+    var txt="PARTIDA "+p.d+" "+p.hora+" — "+p.nomes[0]+" × "+p.nomes[1]+" ("+p.placar+")\n"+
+            p.acerto+"% de acerto em "+p.n+" frases\n\n"+textoDoLog(p.log||[]);
+    if(navigator.clipboard) navigator.clipboard.writeText(txt);
+    this.textContent="copiado";
+    var b=this; setTimeout(function(){ b.textContent="copiar log"; },1400);
+  };
+}
+
+/* ============ modo jogo ============ */
+/* Tela cheia, placar gigante, tela que não apaga. Sem isso não dá para usar na quadra. */
+var wl=null, emJogo=false;
+function acordado(lig){
+  try{
+    if(lig && navigator.wakeLock && !wl){
+      navigator.wakeLock.request("screen").then(function(s){ wl=s; s.addEventListener("release",function(){ wl=null; }); }).catch(function(){});
+    } else if(!lig && wl){ wl.release().catch(function(){}); wl=null; }
+  }catch(e){}
+}
+function modoJogo(lig){
+  emJogo=lig;
+  document.body.classList.toggle("jogo", lig);
+  acordado(lig);
+  if(lig){
+    try{ if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  } else {
+    try{ if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){}); }catch(e){}
+  }
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState==="visible" && emJogo) acordado(true);
+});
+
+/* ============ eventos ============ */
+$("mic").onclick=toggle;
+$("undo").onclick=function(){ if(hist.length){ st=hist.pop(); render(); salvar(); } };
+$("pus").onclick=function(){ push(); addPoint(0); render(); salvar(); };
+$("pthem").onclick=function(){ push(); addPoint(1); render(); salvar(); };
+$("reset").onclick=function(){
+  arquivar();
+  push(); st=fresh(); logLines=[]; heardN=0; okN=0;
+  render(); pintarLog(); updHit(); salvar();
+};
+$("clearlog").onclick=function(){ logLines=[]; heardN=0; okN=0; seeded=false; pintarLog(); updHit(); salvar(); };
+$("testamic").onclick=function(){
+  estadoMic().then(function(e){
+    setDiag("permissão do microfone: " + e);
+    if(e==="denied"){ advise(true); return; }
+    if(!navigator.mediaDevices){ setDiag("este navegador não expõe mediaDevices"); return; }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      st.getTracks().forEach(function(t){ t.stop(); });
+      micOk=true; advise(); setDiag("microfone liberado — pode escutar");
+    }).catch(function(err){
+      micOk=false; lastErr=err.name||"erro"; advise(err.name==="NotAllowedError");
+      setDiag("recusado: " + (err.name||"erro"));
+    });
+  });
+};
+$("copiadiag").onclick=function(){
+  estadoMic().then(function(e){
+    var t = "DIAGNÓSTICO — Cantar o Placar\n"
+          + "API de fala: " + (SR ? "disponível" : "AUSENTE") + "\n"
+          + "https: " + (window.isSecureContext?"sim":"não") + "\n"
+          + "em iframe: " + (isFramed()?"SIM":"não") + "\n"
+          + "WebView de app: " + (isWebView()?"SIM":"não") + "\n"
+          + "permissão do microfone: " + e + "\n"
+          + "último erro: " + (lastErr||"nenhum") + "\n"
+          + "ciclos: " + cycles + "\n"
+          + "navegador: " + navigator.userAgent;
+    if(navigator.clipboard) navigator.clipboard.writeText(t);
+    $("copiadiag").textContent="Copiado";
+    setTimeout(function(){ $("copiadiag").textContent="Copiar diagnóstico"; },1500);
+  });
+};
+$("entrarjogo").onclick=function(){ modoJogo(true); };
+$("sairjogo").onclick=function(){ modoJogo(false); };
+$("limpahist").onclick=function(){ try{ localStorage.removeItem(CHAVE_H); }catch(e){} pintarHist(); };
+$("copy").onclick=function(){
+  var txt="LOG — Cantar o Placar ("+okN+"/"+heardN+" entendidas)\n"+
+          $("n0").value+" × "+$("n1").value+"\n\n"+textoDoLog(logLines);
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt); $("copy").textContent="Copiado"; setTimeout(function(){ $("copy").textContent="Copiar log"; },1400); }
+};
+$("ost").onchange=function(){ cfg.superTb=this.checked; render(); salvar(); };
+$("oshot").onchange=function(){ cfg.oneShot=this.checked; if(on) stop(); micLabel(); salvar(); };
+$("oorder").onchange=function(){ cfg.invert=this.checked; salvar(); };
+$("otts").onchange=function(){ cfg.tts=this.checked; salvar(); };
+
+restaurado = carregar();
+$("oshot").checked=cfg.oneShot; $("ost").checked=cfg.superTb;
+$("oorder").checked=cfg.invert; $("otts").checked=cfg.tts;
+advise(); setDiag("");
+if(restaurado){ pintarLog(); } else { seedLog(); }
+render(); updHit(); micLabel(); fitNames(); labelButtons(); pintarHist();
+$("n0").oninput=function(){ players[0]=nameTokens(this.value); fitNames(); labelButtons(); salvar(); };
+$("n1").oninput=function(){ players[1]=nameTokens(this.value); fitNames(); labelButtons(); salvar(); };
+estadoMic().then(function(e){
+  if(e==="granted") micOk=true;
+  if(e==="denied"){ micOk=false; advise(true); }
+  setDiag(e==="?" ? "" : "permissão do microfone: " + e);
+});
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", function(){ navigator.serviceWorker.register("./sw.js").catch(function(){}); });
+}
+</script>
+</body>
+</html>
