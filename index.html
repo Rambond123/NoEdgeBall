@@ -355,16 +355,15 @@ footer a{color:var(--ink-2)}
         <ul>
           <li><span class="say">quinze zero</span> por padrão o nosso vem primeiro</li>
           <li><span class="say">trinta a quinze pra eles</span> o lado falado inverte a ordem</li>
-          <li><span class="say">iguais em 30</span> · <span class="say">empate em 40</span> <strong>a ordem melhor</strong></li>
+          <li><span class="say">30 iguais</span> · <span class="say">iguais em 30</span> · <span class="say">empate em 40</span></li>
           <li><span class="say">30 pros dois</span> · <span class="say">40 pra ambos</span> · <span class="say">30 cada um</span></li>
-          <li><span class="say">está 30 a 30</span> dizer os dois números nunca falha</li>
-          <li><span class="say">15 a</span> só o quinze aceita o "a" solto</li>
-          <li>Um número sozinho <strong>não</strong> registra — o log lembra a forma certa</li>
+          <li><span class="say">está 30 a 30</span> · <span class="say">15 a</span></li>
         </ul>
-        <h3>Por que "30 iguais" falha</h3>
+        <h3>O que ele conserta sozinho</h3>
         <ul>
-          <li>Falado, <em>"trinta iguais"</em> soa como <em>"trinta e dois"</em> — e o reconhecedor devolve <strong>32</strong>, que também é um placar possível. <em>"quinze iguais"</em> vira <em>"quinziguais"</em> e não vira nada.</li>
-          <li>Pondo a palavra na frente — <span class="say">iguais em 30</span> — a elisão desaparece. O app ainda aceita <span class="say">30 iguais</span>, mas prefira a outra ordem.</li>
+          <li>Falado rápido, <em>"trinta iguais"</em> soa como <em>"trinta e dois"</em> e chega como <strong>32</strong>. Como games sempre se fala com o "a" — <em>"três a dois"</em> —, um número colado desses só pode ser o composto: <strong>32, 33, 35</strong> viram 30–30, e <strong>41, 42, 45</strong> viram 40–40.</li>
+          <li><em>"quinze iguais"</em> vira <em>"quinziguais"</em>, uma palavra só. Ele reconhece essa e as parecidas.</li>
+          <li>Quando o reconhecedor oferece mais de uma hipótese, ganha a que traz a palavra por extenso — ninguém alucina um "iguais".</li>
           <li><span class="say">quarenta iguais</span> · <span class="say">no edge</span> ponto decisivo</li>
           <li><span class="say">está 15 a 15</span> · <span class="say">placar 30 a 15</span> palavras em volta são ignoradas</li>
         </ul>
@@ -484,6 +483,10 @@ function decompor(w){
   }
   var r=m[n];
   if(!r || r.p.length<2 || r.p.length>4) return null;
+  /* "32" não vira games 3-2: games se fala "três a dois", e o reconhecedor entrega
+     isso com o "a". Um "32" colado veio de elisão ("trinta e dois" de "trinta iguais"),
+     nunca de alguém cantando games. Decomposições maiores continuam valendo. */
+  if(n===2 && !PTSET[r.p[0]] && !PTSET[r.p[1]]) return null;
   return r.p;
 }
 var lastGlue = "";
@@ -542,6 +545,14 @@ function scoreFrom(s){
      conjunto; em "trinta a" e "quarenta a" ele come o "a" quase sempre — para esses
      vale a lista de expressões de empate abaixo, feita de palavras que sobrevivem. */
   if(/^(15|quinze)\s*(?:a|ha|h)$/.test(bare)) return {t:"pts", a:15, b:15};
+
+  /* Falado rápido, "quinze iguais" vira "quinziguais" — uma palavra só, que o
+     reconhecedor entrega inteira e sem espaço. */
+  var grudado = bare.match(/\b(quinz|trint|quarent|zer)\w{0,2}(?:iguai?s|igual|guais)\b/);
+  if(grudado){
+    var vg = {quinz:15, trint:30, quarent:40, zer:0}[grudado[1]];
+    return {t:"pts", a:vg, b:vg};
+  }
 
   /* Empate dito por extenso. Duas famílias: a palavra do empate ("iguais", "empatados",
      "deuce") e a do lado duplo ("pros dois", "pra ambos", "cada um"). Tira a expressão
@@ -604,7 +615,13 @@ function scoreFrom(s){
      "trinta quinze" chegasse cortado — então, em vez de chutar, ensina a forma
      que o reconhecedor entrega inteira. */
   if(n.length===1 && n[0].pt!==null)
-    return {t:"amb", why:'ouvi só "' + n[0].pt + '" — diga "' + n[0].pt + ' iguais" ou "' + n[0].pt + ' pros dois"'};
+    return {t:"amb", why:'ouvi só "' + n[0].pt + '" — faltou o outro número'};
+
+  /* Games se fala com o "a" — "três a dois" — e o reconhecedor entrega o "a". Um "32"
+     colado, então, não é games: é o número composto "trinta e dois", que é justamente
+     o que a elisão de "trinta iguais" produz. Mesma coisa para "quarenta e X". */
+  var comp = bare.match(/^(3|4)(\d)$/);
+  if(comp) return {t:"pts", a:+comp[1]*10, b:+comp[1]*10, note:'"' + bare + '" = "' + (comp[1]==="3"?"trinta":"quarenta") + ' e ' + comp[2] + '", que é como sai "' + (comp[1]==="3"?"trinta":"quarenta") + ' iguais"'};
 
   return null;
 }
