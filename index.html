@@ -312,7 +312,6 @@ footer a{color:var(--ink-2)}
         <div class="opts">
           <label class="opt"><input type="checkbox" id="ost" checked><span>Super tie-break no 3º set<small>Terceiro set decidido em tie-break até 10 pontos.</small></span></label>
           <label class="opt"><input type="checkbox" id="oshot" checked><span>Escutar só ao tocar (padrão)<small>Ouve uma frase e desliga — é assim que vai funcionar no relógio, com o gesto do punho abrindo a janela de escuta. Desmarcar liga a escuta contínua, que no Chrome do Android religa a cada frase e pode pedir confirmação toda vez.</small></span></label>
-          <label class="opt"><input type="checkbox" id="osolo" checked><span>Número sozinho vira empate<small>"trinta a" costuma chegar só como "trinta" — o "a" é curto demais. Com isto ligado, um número de ponto sozinho vira empate naquele número, com aviso no log.</small></span></label>
           <label class="opt"><input type="checkbox" id="oorder"><span>Primeiro número é o deles<small>Padrão: o primeiro número que você fala é o nosso. Dizer "pra eles" ou "pra nós" na frase manda mais que este ajuste.</small></span></label>
           <label class="opt"><input type="checkbox" id="otts"><span>Confirmação falada<small>O app repete o placar aplicado. Cuidado: o microfone escuta a própria voz do aparelho.</small></span></label>
         </div>
@@ -356,8 +355,11 @@ footer a{color:var(--ink-2)}
         <ul>
           <li><span class="say">quinze zero</span> por padrão o nosso vem primeiro</li>
           <li><span class="say">trinta a quinze pra eles</span> o lado falado inverte a ordem</li>
-          <li><span class="say">15 a</span> · <span class="say">30 a</span> · <span class="say">40 a</span> empate naquele número</li>
-          <li><span class="say">30 iguais</span> mais confiável que "30 a" — o "a" solto o reconhecedor perde</li>
+          <li><span class="say">15 a</span> só o quinze aceita o "a" solto</li>
+          <li><span class="say">30 iguais</span> · <span class="say">iguais em 40</span> · <span class="say">empate em 30</span></li>
+          <li><span class="say">30 pros dois</span> · <span class="say">40 pra ambos</span> · <span class="say">30 cada um</span></li>
+          <li><span class="say">está 30 a 30</span> dizer os dois números sempre funciona</li>
+          <li>Um número sozinho <strong>não</strong> registra — o log lembra a forma certa</li>
           <li><span class="say">quarenta iguais</span> · <span class="say">no edge</span> ponto decisivo</li>
           <li><span class="say">está 15 a 15</span> · <span class="say">placar 30 a 15</span> palavras em volta são ignoradas</li>
         </ul>
@@ -391,7 +393,7 @@ footer a{color:var(--ink-2)}
 
 /* ============ configuração ============ */
 /* No beach tennis todo game é decidido no "no edge": 40-40 = ponto decisivo, nunca há vantagem. */
-var cfg = { superTb:true, invert:false, tts:false, oneShot:true, soloEmpate:true };
+var cfg = { superTb:true, invert:false, tts:false, oneShot:true };
 
 /* ============ estado ============ */
 var PT = [0,15,30,40];
@@ -410,6 +412,7 @@ hist = [];
 function norm(s){
   return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
     .replace(/(\d)\s*[\u00AA\u00BA\u00B0\u1D43\u1D52]/g,"$1 a")  /* "15ª" "30º" "40°" -> "15 a" */
+    .replace(/(\d)(a|h)\b/g,"$1 $2")                 /* "15a" -> "15 a" */
     .replace(/(\d)\s*x\s*(\d)/g,"$1 $2")            /* "30x30" -> "30 30" */
     .replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();
 }
@@ -530,19 +533,31 @@ function scoreFrom(s){
   var bare = unglue(stripSide(stripLead(s)));
   var glue = lastGlue;
 
-  /* "15 a", "30 a", "40 a" = empate naquele número */
-  /* O "a" de "trinta a" é a coisa mais fácil de o reconhecedor perder ou trocar.
-     Aceita tudo que ele costuma devolver no lugar. */
-  var tie = bare.match(/^([a-z0-9]+)\s*(?:a|ha|h|as|ao|e|eh|ae)$/);
-  if(tie){
-    var tw = tie[1];
-    if(PTW.hasOwnProperty(tw)) return {t:"pts", a:PTW[tw], b:PTW[tw]};
-    /* "um" fora: "uma" cairia aqui e viraria games 1-1 */
-    if(tw!=="um" && GMW.hasOwnProperty(tw) && GMW[tw]<=7) return {t:"gms", a:GMW[tw], b:GMW[tw]};
+  /* Só o 15 aceita o "a" solto. "quinze" é palavra longa e o reconhecedor entrega o
+     conjunto; em "trinta a" e "quarenta a" ele come o "a" quase sempre — para esses
+     vale a lista de expressões de empate abaixo, feita de palavras que sobrevivem. */
+  if(/^(15|quinze)\s*(?:a|ha|h)$/.test(bare)) return {t:"pts", a:15, b:15};
+
+  /* Empate dito por extenso. Duas famílias: a palavra do empate ("iguais", "empatados",
+     "deuce") e a do lado duplo ("pros dois", "pra ambos", "cada um"). Tira a expressão
+     do texto e vê que número sobrou — assim "30 pros dois" não lê o "dois" como game. */
+  var TIE_PALAVRA = /\b(iguais|igual|igualado|igualados|igualada|igualadas|empate|empatado|empatados|empatada|empatadas|deuce|duce|deus)\b/g;
+  var TIE_AMBOS = /\b(?:pros?|pras?|para|pro|pra)\s+(?:os\s+|as\s+)?(?:dois|2|ambos|ambas|duas|lados)\b|\bambos\b|\bambas\b|\bcada\s+(?:um|lado)\b|\btodo\s+mundo\b|\bos\s+dois\s+lados\b|\bdos\s+lados\b/g;
+
+  var temEmpate = TIE_PALAVRA.test(s) || TIE_AMBOS.test(s);
+  TIE_PALAVRA.lastIndex = 0; TIE_AMBOS.lastIndex = 0;
+  if(temEmpate){
+    var limpo = unglue(bare.replace(TIE_PALAVRA," ").replace(TIE_AMBOS," ").replace(/\s+/g," ").trim());
+    var ne = nums(limpo);
+    if(ne.length===1){
+      if(ne[0].pt!==null) return {t:"pts", a:ne[0].pt, b:ne[0].pt};
+      if(ne[0].gm!==null && ne[0].gm<=7) return {t:"gms", a:ne[0].gm, b:ne[0].gm};
+    }
+    if(ne.length===0) return {t:"pts", a:40, b:40};   /* "iguais" sozinho = ponto decisivo */
   }
 
   var n = nums(bare);
-  var temIguais = /\b(iguais|igual|deuce|deus|duce|empate|empatado)\b/.test(s);
+  var temIguais = temEmpate;
 
   /* "1, 2, 30 x 30" = um game a dois, trinta iguais. Quatro números numa frase só:
      os dois primeiros são games (inteiros baixos), os dois últimos são o placar do game. */
@@ -580,11 +595,11 @@ function scoreFrom(s){
     if(a.gm!==null && b.gm!==null && a.gm<=7 && b.gm<=7) return glued(ord("gms", a.gm, b.gm, s), glue);
   }
 
-  /* Último recurso: sobrou um número de ponto sozinho. Quase sempre é um "30 a"
-     cujo "a" o reconhecedor comeu — um placar precisa de dois números. Assume o
-     empate e avisa, para você ver e desfazer se for outra coisa. */
-  if(cfg.soloEmpate && n.length===1 && n[0].pt!==null)
-    return {t:"pts", a:n[0].pt, b:n[0].pt, note:"você disse só um número — assumi empate"};
+  /* Sobrou um número de ponto sozinho. Adivinhar empate aqui erraria sempre que
+     "trinta quinze" chegasse cortado — então, em vez de chutar, ensina a forma
+     que o reconhecedor entrega inteira. */
+  if(n.length===1 && n[0].pt!==null)
+    return {t:"amb", why:'ouvi só "' + n[0].pt + '" — diga "' + n[0].pt + ' iguais" ou "' + n[0].pt + ' pros dois"'};
 
   return null;
 }
@@ -1205,12 +1220,11 @@ $("copy").onclick=function(){
 };
 $("ost").onchange=function(){ cfg.superTb=this.checked; render(); salvar(); };
 $("oshot").onchange=function(){ cfg.oneShot=this.checked; if(on) stop(); micLabel(); salvar(); };
-$("osolo").onchange=function(){ cfg.soloEmpate=this.checked; salvar(); };
 $("oorder").onchange=function(){ cfg.invert=this.checked; salvar(); };
 $("otts").onchange=function(){ cfg.tts=this.checked; salvar(); };
 
 restaurado = carregar();
-$("oshot").checked=cfg.oneShot; $("ost").checked=cfg.superTb; $("osolo").checked=cfg.soloEmpate;
+$("oshot").checked=cfg.oneShot; $("ost").checked=cfg.superTb;
 $("oorder").checked=cfg.invert; $("otts").checked=cfg.tts;
 advise(); setDiag("");
 if(restaurado){ pintarLog(); } else { seedLog(); }
