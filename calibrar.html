@@ -168,7 +168,7 @@ footer{color:var(--ink-3);font-size:12.5px;border-top:1px solid var(--line);padd
 /* ====== PARSER (injetado do app, para julgar igual a ele) ====== */
 /* ---- parser e regra de escolha copiados do app, sem alteração ---- */
 var cfg = { superTb:true, invert:false, tts:false, oneShot:true };
-var st  = { tb:false, tbp:[0,0] };          /* o parser só lê st.tb */
+var st  = { tb:false, tbp:[0,0] };
 function ordered(a,b,raw){
   var k = side(raw||"");
   if(k===1) return [b,a,true];
@@ -315,11 +315,13 @@ function scoreFrom(s){
      saem da elisão de "trinta iguais" / "quarenta iguais", porque só 30 e 40 são
      pontos que precedem a palavra. Já "11", "21", "64" não são compostos de nada —
      são a colagem de dois games, que se fala "um a um", "seis a quatro". */
-  var comp = pre.match(/^(3|4)([1-9])$/);   /* o dígito extra é a marca da elisão */
+  /* REGRA PROVISÓRIA — vale até o corpus de calibragem dizer o que de fato aparece.
+     Só os finais que rimam com "iguais" (/ajs/): dois, três, seis. "trinta e cinco"
+     não sai de "trinta iguais", e cobrir 31-39 inteiro era chute meu, não dedução. */
+  var comp = pre.match(/^(3|4)([236])$/);
   if(!comp){
-    /* o mesmo composto, mas escrito por extenso: "trinta e cinco" */
-    var ext = pre.match(/^(trinta|quarenta)\s+e\s+(um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|[1-9])$/);
-    if(ext) comp = [pre, ext[1]==="trinta" ? "3" : "4", ext[2]];
+    var ext = pre.match(/^(trinta|quarenta)\s+e\s+(dois|duas|tres|seis)$/);
+    if(ext) comp = [pre, ext[1]==="trinta" ? "3" : "4", "2"];
   }
   if(comp) return {t:"pts", a:+comp[1]*10, b:+comp[1]*10,
                    note:'"' + pre + '" = "' + (comp[1]==="3"?"trinta":"quarenta") + ' e ' + comp[2] +
