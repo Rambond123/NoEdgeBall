@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>NoEdgeBall — gravador do acelerômetro</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%}
+  body{background:#0b0f14;color:#e7eef6;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       display:flex;flex-direction:column;overscroll-behavior:none}
+  header{padding:10px 14px;border-bottom:1px solid #1b2634}
+  h1{font-size:15px;margin:0;font-weight:600}
+  header p{margin:4px 0 0;font-size:12px;color:#7d93aa}
+
+  #erro{background:#7f1d1d;color:#fff;padding:10px 14px;font-size:13px;display:none}
+
+  main{flex:1;padding:16px 14px;display:flex;flex-direction:column;gap:16px;align-items:center}
+
+  #rec{width:min(320px,88vw);border:0;border-radius:16px;padding:22px;font-size:20px;font-weight:800;
+       background:#dc2626;color:#fff;letter-spacing:.02em}
+  #rec.parar{background:#1b2634;color:#ff8080;border:2px solid #dc2626}
+
+  #status{font-size:13px;color:#7d93aa;text-align:center;min-height:20px}
+
+  .eixos{width:min(320px,88vw);display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .eixo{background:#111925;border:1px solid #1e2a38;border-radius:12px;padding:9px;text-align:center}
+  .eixo b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+  .eixo span{font-size:11px;color:#7d93aa;letter-spacing:.08em}
+
+  .marcas{width:min(320px,88vw);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .marcas button{background:#1d4ed8;color:#fff;border:0;border-radius:12px;padding:16px 8px;
+                 font-size:15px;font-weight:700}
+  .marcas button:disabled{background:#18202b;color:#4d6072}
+  .marcas button.sec{background:#1b2634;color:#cfe0f0;border:1px solid #2a3a4c}
+  .marcas button.sec:disabled{color:#3d4c5c;border-color:#1e2a38}
+
+  .saida{width:min(320px,88vw);display:grid;gap:8px}
+  .saida button{background:#16a34a;color:#fff;border:0;border-radius:12px;padding:15px;font-size:15px;font-weight:700}
+  .saida button.alt{background:#1b2634;color:#cfe0f0;border:1px solid #2a3a4c}
+  .saida button:disabled{background:#18202b;color:#4d6072;border-color:#1e2a38}
+
+  #resumo{width:min(320px,88vw);background:#0d131b;border:1px solid #1b2634;border-radius:12px;
+          padding:10px 12px;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;color:#9fb4c8;
+          white-space:pre-wrap;display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Gravador do acelerômetro</h1>
+  <p>Grava a posição crua do aparelho. Mexa como você mexeria em jogo; toque em "Levantei" no instante exato do gesto.</p>
+</header>
+
+<div id="erro"></div>
+
+<main>
+  <button id="permBtn" style="display:none;background:#1d4ed8;color:#fff;border:0;border-radius:12px;padding:15px 22px;font-weight:700">
+    Liberar o sensor de movimento
+  </button>
+
+  <button id="rec">● GRAVAR</button>
+  <div id="status">pronto</div>
+
+  <div class="eixos">
+    <div class="eixo"><b id="ex">–</b><span>X</span></div>
+    <div class="eixo"><b id="ey">–</b><span>Y</span></div>
+    <div class="eixo"><b id="ez">–</b><span>Z</span></div>
+  </div>
+
+  <div class="marcas">
+    <button id="mLev" disabled>Levantei</button>
+    <button id="mBai" disabled>Abaixei</button>
+    <button id="mFal" class="sec" disabled>Falei o placar</button>
+    <button id="mErr" class="sec" disabled>Foi sem querer</button>
+  </div>
+
+  <div class="saida">
+    <button id="bBaixar" disabled>Baixar o arquivo</button>
+    <button id="bCopiar" class="alt" disabled>Copiar para a área de transferência</button>
+  </div>
+
+  <div id="resumo"></div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+
+  var gravando=false, t0=0, amostras=[], marcas=[], ultimo=null, temSensor=false;
+  var LIMITE=40000;                     /* ~10 min a 60 Hz */
+
+  function num(v){ return (v===null||v===undefined)?"":(Math.round(v*1000)/1000); }
+
+  function onMotion(ev){
+    var a=ev.accelerationIncludingGravity, r=ev.rotationRate;
+    if(!a || a.x===null) return;
+    temSensor=true;
+    ultimo=a;
+    $("ex").textContent=(a.x||0).toFixed(1);
+    $("ey").textContent=(a.y||0).toFixed(1);
+    $("ez").textContent=(a.z||0).toFixed(1);
+    if(!gravando) return;
+    if(amostras.length>=LIMITE){ parar("limite de amostras atingido"); return; }
+    amostras.push([Date.now()-t0, a.x, a.y, a.z,
+                   r?r.alpha:null, r?r.beta:null, r?r.gamma:null]);
+    if(amostras.length%30===0) mostraStatus();
+  }
+
+  function mostraStatus(){
+    var s=(Date.now()-t0)/1000;
+    $("status").textContent="gravando · "+s.toFixed(1)+" s · "+amostras.length+" amostras · "+marcas.length+" marcas";
+  }
+
+  function comecar(){
+    gravando=true; t0=Date.now(); amostras=[]; marcas=[];
+    $("rec").textContent="■ PARAR"; $("rec").classList.add("parar");
+    ["mLev","mBai","mFal","mErr"].forEach(function(id){ $(id).disabled=false; });
+    $("bBaixar").disabled=true; $("bCopiar").disabled=true; $("resumo").style.display="none";
+    if(navigator.vibrate){ try{ navigator.vibrate(30); }catch(e){} }
+    mostraStatus();
+  }
+
+  function parar(motivo){
+    gravando=false;
+    $("rec").textContent="● GRAVAR"; $("rec").classList.remove("parar");
+    ["mLev","mBai","mFal","mErr"].forEach(function(id){ $(id).disabled=true; });
+    var temDados=amostras.length>0;
+    $("bBaixar").disabled=!temDados; $("bCopiar").disabled=!temDados;
+    var s=(Date.now()-t0)/1000;
+    var hz = s>0 ? (amostras.length/s).toFixed(0) : "0";
+    $("status").textContent="parado"+(motivo?" ("+motivo+")":"")+" · "+s.toFixed(1)+" s · "+
+                            amostras.length+" amostras · "+hz+" Hz · "+marcas.length+" marcas";
+    if(temDados){
+      $("resumo").style.display="block";
+      $("resumo").textContent=resumoTexto();
+    }
+    if(navigator.vibrate){ try{ navigator.vibrate([30,60,30]); }catch(e){} }
+  }
+
+  $("rec").onclick=function(){
+    if(!temSensor){ mostrarErro("O acelerômetro não respondeu — nada a gravar."); return; }
+    gravando ? parar("") : comecar();
+  };
+
+  function marcar(rotulo){
+    if(!gravando) return;
+    marcas.push([Date.now()-t0, rotulo]);
+    if(navigator.vibrate){ try{ navigator.vibrate(20); }catch(e){} }
+    mostraStatus();
+  }
+  $("mLev").onclick=function(){ marcar("levantei"); };
+  $("mBai").onclick=function(){ marcar("abaixei"); };
+  $("mFal").onclick=function(){ marcar("falei"); };
+  $("mErr").onclick=function(){ marcar("sem_querer"); };
+
+  function resumoTexto(){
+    var l=["marcas registradas:"];
+    if(!marcas.length) l.push("  (nenhuma)");
+    for(var i=0;i<marcas.length;i++) l.push("  "+(marcas[i][0]/1000).toFixed(2)+" s  "+marcas[i][1]);
+    return l.join("\n");
+  }
+
+  function montarCSV(){
+    var dur=amostras.length?amostras[amostras.length-1][0]/1000:0;
+    var L=[];
+    L.push("# NoEdgeBall - gravacao crua do acelerometro");
+    L.push("# quando: "+new Date().toISOString());
+    L.push("# aparelho: "+navigator.userAgent);
+    L.push("# duracao_s: "+dur.toFixed(2)+"  amostras: "+amostras.length+
+           "  taxa_hz: "+(dur>0?(amostras.length/dur).toFixed(1):"0"));
+    L.push("# eixos: accelerationIncludingGravity (m/s2) + rotationRate (graus/s)");
+    L.push("#");
+    for(var i=0;i<marcas.length;i++) L.push("# MARCA "+(marcas[i][0]/1000).toFixed(3)+" "+marcas[i][1]);
+    L.push("#");
+    L.push("t_ms,ax,ay,az,ralpha,rbeta,rgamma");
+    for(var j=0;j<amostras.length;j++){
+      var a=amostras[j];
+      L.push(a[0]+","+num(a[1])+","+num(a[2])+","+num(a[3])+","+num(a[4])+","+num(a[5])+","+num(a[6]));
+    }
+    return L.join("\n");
+  }
+
+  $("bBaixar").onclick=function(){
+    var txt=montarCSV();
+    var b=new Blob([txt],{type:"text/csv"});
+    var u=URL.createObjectURL(b);
+    var a=document.createElement("a");
+    var d=new Date(), pad=function(n){return (n<10?"0":"")+n;};
+    a.href=u;
+    a.download="acelerometro_"+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"_"+
+               pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+".csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); },2000);
+  };
+
+  $("bCopiar").onclick=function(){
+    var txt=montarCSV();
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(txt).then(
+        function(){ $("status").textContent="copiado ("+txt.length+" caracteres)"; },
+        function(){ mostrarErro("Não deu para copiar. Use o botão de baixar."); });
+    } else mostrarErro("Este navegador não deixa copiar. Use o botão de baixar.");
+  };
+
+  function mostrarErro(t){ var e=$("erro"); e.textContent=t; e.style.display="block"; }
+
+  function ligarSensor(){
+    window.addEventListener("devicemotion",onMotion,{passive:true});
+    setTimeout(function(){
+      if(!temSensor) mostrarErro("O acelerômetro não respondeu. Em desktop não existe; no iPhone é preciso liberar primeiro.");
+    },1500);
+  }
+  if(typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function"){
+    var b=$("permBtn"); b.style.display="block";
+    b.onclick=function(){
+      DeviceMotionEvent.requestPermission().then(function(r){
+        if(r==="granted"){ b.style.display="none"; ligarSensor(); }
+        else mostrarErro("Permissão de movimento negada.");
+      }).catch(function(){ mostrarErro("Não foi possível pedir a permissão de movimento."); });
+    };
+  } else if(typeof DeviceMotionEvent!=="undefined"){ ligarSensor(); }
+  else mostrarErro("Este navegador não expõe o acelerômetro.");
+})();
+</script>
+</body>
+</html>
