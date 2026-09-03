@@ -11,41 +11,49 @@
   body{background:#0b0f14;color:#e7eef6;font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
        display:flex;flex-direction:column;overscroll-behavior:none}
   header{padding:10px 14px;border-bottom:1px solid #1b2634;display:flex;justify-content:space-between;align-items:center;gap:8px}
-  h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.2px}
+  h1{font-size:15px;margin:0;font-weight:600}
   .modo{display:flex;gap:4px}
   .modo button{background:#141c26;color:#8ea3b8;border:1px solid #24313f;border-radius:999px;
                padding:5px 11px;font-size:12px;font-weight:600}
   .modo button[aria-pressed="true"]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
 
+  #calib{padding:12px 14px;background:#101a26;border-bottom:1px solid #1b2634}
+  #calib p{margin:0 0 9px;font-size:13px;color:#a8bccf}
+  .calbtns{display:flex;gap:8px}
+  .calbtns button{flex:1;background:#1b2634;color:#cfe0f0;border:1px solid #2a3a4c;border-radius:10px;
+                  padding:12px 8px;font-size:13px;font-weight:600;line-height:1.3}
+  .calbtns button.ok{border-color:#16a34a;color:#8ff0b5}
+  .calbtns button b{display:block;font-size:11px;font-weight:600;color:#6f869c;margin-top:3px}
+
   #palco{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-         gap:14px;padding:16px;position:relative;user-select:none}
+         gap:13px;padding:16px;position:relative;user-select:none}
   #palco.flash{background:#16a34a}
-  #estado{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#7d93aa;font-weight:700}
-  #angulo{font-size:74px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
-  #angulo small{font-size:24px;color:#6b8096}
+  #estado{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#7d93aa;font-weight:700;text-align:center}
+  #dist{font-size:70px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  #dist small{font-size:22px;color:#6b8096}
   .barra{width:min(340px,86vw);height:14px;background:#141c26;border-radius:999px;overflow:hidden;position:relative}
-  .barra i{position:absolute;inset:0 auto 0 0;background:#1d4ed8;border-radius:999px;width:0}
-  .marcas{width:min(340px,86vw);display:flex;justify-content:space-between;font-size:11px;color:#4d6072}
+  .barra i{position:absolute;inset:0 auto 0 0;background:#1d4ed8;width:0}
+  .leg{width:min(340px,86vw);display:flex;justify-content:space-between;font-size:11px;color:#4d6072}
 
   #contadores{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-  .card{background:#111925;border:1px solid #1e2a38;border-radius:12px;padding:8px 14px;text-align:center;min-width:88px}
-  .card b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
-  .card span{font-size:11px;color:#7d93aa;text-transform:uppercase;letter-spacing:.08em}
+  .card{background:#111925;border:1px solid #1e2a38;border-radius:12px;padding:8px 14px;text-align:center;min-width:86px}
+  .card b{display:block;font-size:25px;font-variant-numeric:tabular-nums}
+  .card span{font-size:11px;color:#7d93aa;text-transform:uppercase;letter-spacing:.07em}
 
   #erro{background:#7f1d1d;color:#fff;padding:10px 14px;font-size:13px;display:none}
   #falso{background:#7f1d1d;color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px}
   #permBtn{background:#1d4ed8;color:#fff;border:0;border-radius:10px;padding:13px 20px;font-weight:700;font-size:15px}
 
   details{border-top:1px solid #1b2634;background:#0d131b}
-  summary{padding:11px 14px;font-size:13px;color:#8ea3b8;font-weight:600;cursor:pointer}
+  summary{padding:11px 14px;font-size:13px;color:#8ea3b8;font-weight:600}
   .ajuste{padding:0 14px 12px;display:grid;gap:10px}
   .lin{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;font-size:13px;color:#a8bccf}
   .lin input[type=range]{width:100%;grid-column:1/-1}
   .lin b{font-variant-numeric:tabular-nums;color:#e7eef6}
-  #log{max-height:34vh;overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;
+  #log{max-height:32vh;overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;
        padding:0 14px 12px;color:#9fb4c8;white-space:pre-wrap}
   .rodape{display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap}
-  .rodape button{flex:1;min-width:120px;background:#1b2634;color:#cfe0f0;border:1px solid #2a3a4c;
+  .rodape button{flex:1;min-width:110px;background:#1b2634;color:#cfe0f0;border:1px solid #2a3a4c;
                  border-radius:10px;padding:10px;font-size:13px;font-weight:600}
 </style>
 </head>
@@ -54,18 +62,26 @@
 <header>
   <h1>Bancada de gesto</h1>
   <div class="modo">
-    <button id="mGesto"  aria-pressed="true">Gesto</button>
-    <button id="mToque"  aria-pressed="false">Toque</button>
+    <button id="mGesto" aria-pressed="true">Gesto</button>
+    <button id="mToque" aria-pressed="false">Toque</button>
   </div>
 </header>
 
 <div id="erro"></div>
 
+<div id="calib">
+  <p id="calTxt">Grave as duas posições: como o aparelho fica parado, e como fica quando você levanta para falar.</p>
+  <div class="calbtns">
+    <button id="bRep">Gravar REPOUSO<b>segure parado e toque</b></button>
+    <button id="bLei">Gravar LEITURA<b>levante e toque</b></button>
+  </div>
+</div>
+
 <div id="palco">
   <div id="estado">iniciando</div>
-  <div id="angulo">--<small>°</small></div>
+  <div id="dist">--<small>°</small></div>
   <div class="barra"><i id="preench"></i></div>
-  <div class="marcas"><span>0°</span><span id="mBaixo">25°</span><span id="mAlto">45°</span><span>90°</span></div>
+  <div class="leg"><span id="legRep">repouso —</span><span id="legLei">leitura —</span></div>
 
   <div id="contadores">
     <div class="card"><b id="cAcerto">0</b><span>disparos</span></div>
@@ -80,10 +96,8 @@
 <details>
   <summary>Ajustes e log</summary>
   <div class="ajuste">
-    <div class="lin"><span>Ângulo de repouso (braço baixo)</span><b id="vBaixo">25°</b>
-      <input type="range" id="rBaixo" min="0" max="60" step="1" value="25"></div>
-    <div class="lin"><span>Ângulo de leitura (pulso erguido)</span><b id="vAlto">45°</b>
-      <input type="range" id="rAlto" min="20" max="85" step="1" value="45"></div>
+    <div class="lin"><span>Tolerância da pose</span><b id="vTol">30°</b>
+      <input type="range" id="rTol" min="10" max="60" step="1" value="30"></div>
     <div class="lin"><span>Tempo parado para valer</span><b id="vHold">300 ms</b>
       <input type="range" id="rHold" min="0" max="900" step="50" value="300"></div>
     <div class="lin"><span>Tremor tolerado enquanto parado</span><b id="vEstab">12°</b>
@@ -92,6 +106,7 @@
   <div id="log">—</div>
   <div class="rodape">
     <button id="bZerar">Zerar contadores</button>
+    <button id="bLimpar">Apagar calibragem</button>
     <button id="bCopiar">Copiar log</button>
   </div>
 </details>
@@ -99,94 +114,124 @@
 <script>
 (function(){
   "use strict";
+  var $=function(id){return document.getElementById(id);};
+  var palco=$("palco"), estadoEl=$("estado"), distEl=$("dist"), preench=$("preench");
 
-  var $ = function(id){ return document.getElementById(id); };
-  var palco=$("palco"), estadoEl=$("estado"), anguloEl=$("angulo"), preench=$("preench");
+  var P={tol:30, hold:300, estab:12, refrat:1200};
+  var poseRep=null, poseLei=null;          /* vetores unitários de gravidade */
+  var g=null;                              /* leitura suavizada, unitária */
+  var fase="INICIO", tEntrou=0, tParado=0, ancora=null, ultDisparo=0;
+  var temSensor=false, nAcerto=0, nFalso=0, latencias=[], linhas=[];
 
-  /* ---------- parâmetros ---------- */
-  var P = { baixo:25, alto:45, hold:300, estab:12, refrat:1200 };
-
-  /* ---------- estado da máquina ---------- */
-  /* ARMADO      -> braço baixo, pronto para disparar
-     SUBINDO     -> passou do ângulo alto, medindo estabilidade
-     DISPAROU    -> acabou de acionar
-     REARMANDO   -> precisa baixar o braço abaixo de "baixo" para armar de novo   */
-  var fase="INICIO", tSubiu=0, tParado=0, refBase=null, ultDisparo=0;
-  var elev=0, elevSuave=0, temSensor=false;
-  var latencias=[], nAcerto=0, nFalso=0, linhas=[];
-
-  function agora(){ return Date.now(); }
-  function hora(){ var d=new Date(); return d.toTimeString().slice(0,8); }
-
-  function log(txt){
-    linhas.push("["+hora()+"] "+txt);
-    if(linhas.length>300) linhas.shift();
-    var el=$("log"); el.textContent = linhas.slice().reverse().join("\n");
+  /* ---------- vetores ---------- */
+  function unit(v){ var m=Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]); return m<0.5?null:[v[0]/m,v[1]/m,v[2]/m]; }
+  function ang(a,b){
+    if(!a||!b) return 999;
+    var d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+    d=Math.max(-1,Math.min(1,d));
+    return Math.acos(d)*180/Math.PI;
   }
 
+  function hora(){ return new Date().toTimeString().slice(0,8); }
+  function log(t){ linhas.push("["+hora()+"] "+t); if(linhas.length>300) linhas.shift();
+                   $("log").textContent=linhas.slice().reverse().join("\n"); }
+
   function setFase(f){
-    if(fase===f) return;
-    fase=f;
-    var rot={ARMADO:"armado — braço baixo",SUBINDO:"subindo",DISPAROU:"disparou",
-             REARMANDO:"baixe o braço para rearmar",TOQUE:"toque na tela",SEMSENSOR:"sem sensor"};
-    estadoEl.textContent = rot[f]||f;
+    if(fase===f) return; fase=f;
+    var r={ARMADO:"armado — na posição de repouso",
+           INDO:"chegando na posição de leitura",
+           REARMANDO:"volte ao repouso para rearmar",
+           SEMCAL:"grave as duas posições acima",
+           TOQUE:"toque em qualquer lugar da tela",
+           SEMSENSOR:"sem acelerômetro — use o modo Toque"};
+    estadoEl.textContent=r[f]||f;
   }
 
   /* ---------- disparo ---------- */
-  function disparar(origem, latencia){
-    var t=agora();
-    if(t-ultDisparo < P.refrat) return;
+  function disparar(origem, lat){
+    var t=Date.now();
+    if(t-ultDisparo<P.refrat) return;
     ultDisparo=t;
     nAcerto++; $("cAcerto").textContent=nAcerto;
-    if(typeof latencia==="number"){
-      latencias.push(latencia);
-      var s=0; for(var i=0;i<latencias.length;i++) s+=latencias[i];
-      $("cLat").textContent = Math.round(s/latencias.length);
+    if(typeof lat==="number"){
+      latencias.push(lat);
+      var s=0,i; for(i=0;i<latencias.length;i++) s+=latencias[i];
+      $("cLat").textContent=Math.round(s/latencias.length);
     }
-    if(navigator.vibrate) { try{ navigator.vibrate(40); }catch(e){} }
+    if(navigator.vibrate){ try{ navigator.vibrate(40); }catch(e){} }
     palco.classList.add("flash");
-    setTimeout(function(){ palco.classList.remove("flash"); }, 220);
-    log("DISPARO ("+origem+")"+(typeof latencia==="number"?" latência "+Math.round(latencia)+" ms":"")+
-        " · ângulo "+Math.round(elevSuave)+"°");
+    setTimeout(function(){ palco.classList.remove("flash"); },220);
+    log("DISPARO ("+origem+")"+(typeof lat==="number"?" · "+Math.round(lat)+" ms":""));
   }
 
-  /* ---------- leitura do acelerômetro ---------- */
+  /* ---------- sensor ---------- */
   function onMotion(ev){
-    var g = ev.accelerationIncludingGravity;
-    if(!g || g.x===null) return;
+    var a=ev.accelerationIncludingGravity;
+    if(!a||a.x===null) return;
     temSensor=true;
-    var m = Math.sqrt(g.x*g.x + g.y*g.y + g.z*g.z);
-    if(m < 3) return;                       /* queda livre / leitura ruim */
-    var razao = Math.max(-1, Math.min(1, g.z/m));
-    elev = Math.asin(razao) * 180/Math.PI;  /* elevação da tela acima da horizontal */
-    elevSuave = elevSuave*0.7 + elev*0.3;   /* suavização */
+    var u=unit([a.x,a.y,a.z]);
+    if(!u) return;
+    if(!g) g=u;
+    else { g=unit([g[0]*0.7+u[0]*0.3, g[1]*0.7+u[1]*0.3, g[2]*0.7+u[2]*0.3]) || g; }
     passo();
   }
 
   function passo(){
-    var t=agora(), a=elevSuave;
+    if(!g) return;
+    var dRep=ang(g,poseRep), dLei=ang(g,poseLei);
 
-    anguloEl.innerHTML = Math.round(a) + "<small>°</small>";
-    var pct = Math.max(0, Math.min(100, (a/90)*100));
-    preench.style.width = pct + "%";
-    preench.style.background = a>=P.alto ? "#16a34a" : "#1d4ed8";
+    $("legRep").textContent = poseRep ? "repouso "+Math.round(dRep)+"°" : "repouso —";
+    $("legLei").textContent = poseLei ? "leitura "+Math.round(dLei)+"°" : "leitura —";
+
+    if(poseLei){
+      distEl.innerHTML = Math.round(dLei)+"<small>°</small>";
+      var pct=Math.max(0,Math.min(100,(1-dLei/90)*100));
+      preench.style.width=pct+"%";
+      preench.style.background = dLei<=P.tol ? "#16a34a" : "#1d4ed8";
+    } else {
+      distEl.innerHTML = "--<small>°</small>"; preench.style.width="0";
+    }
 
     if(modo!=="gesto") return;
+    if(!poseRep||!poseLei){ setFase("SEMCAL"); return; }
 
+    var t=Date.now();
     if(fase==="ARMADO"){
-      if(a >= P.alto){ setFase("SUBINDO"); tSubiu=t; tParado=t; refBase=a; }
+      if(dLei<=P.tol){ setFase("INDO"); tEntrou=t; tParado=t; ancora=g; }
     }
-    else if(fase==="SUBINDO"){
-      if(a < P.baixo){ setFase("ARMADO"); return; }
-      if(refBase===null) refBase=a;
-      if(Math.abs(a-refBase) > P.estab){ refBase=a; tParado=t; return; }  /* ainda mexendo */
-      if(t - tParado >= P.hold){
-        disparar("gesto", t - tSubiu);
-        setFase("REARMANDO");
-      }
+    else if(fase==="INDO"){
+      if(dLei>P.tol){ setFase(dRep<=P.tol?"ARMADO":"REARMANDO"); return; }
+      if(ang(g,ancora)>P.estab){ ancora=g; tParado=t; return; }
+      if(t-tParado>=P.hold){ disparar("gesto", t-tEntrou); setFase("REARMANDO"); }
     }
     else if(fase==="REARMANDO"){
-      if(a < P.baixo){ setFase("ARMADO"); refBase=null; }
+      if(dRep<=P.tol){ setFase("ARMADO"); ancora=null; }
+    }
+    else { setFase(dRep<=P.tol?"ARMADO":"REARMANDO"); }
+  }
+
+  /* ---------- calibragem ---------- */
+  function gravar(qual){
+    if(!g){ log("sem leitura do sensor — não deu para gravar"); return; }
+    if(qual==="rep"){ poseRep=g.slice(); $("bRep").classList.add("ok"); }
+    else            { poseLei=g.slice(); $("bLei").classList.add("ok"); }
+    salvar(); atualizaCalTxt();
+    log("pose "+(qual==="rep"?"REPOUSO":"LEITURA")+" gravada");
+    setFase(poseRep&&poseLei ? "REARMANDO" : "SEMCAL");
+  }
+  $("bRep").onclick=function(){ gravar("rep"); };
+  $("bLei").onclick=function(){ gravar("lei"); };
+
+  function atualizaCalTxt(){
+    var sep = (poseRep&&poseLei) ? Math.round(ang(poseRep,poseLei)) : null;
+    if(!poseRep||!poseLei){
+      $("calTxt").textContent="Grave as duas posições: como o aparelho fica parado, e como fica quando você levanta para falar.";
+    } else if(sep < P.tol*2){
+      var sug=Math.max(10,Math.floor(sep/2.5));
+      $("calTxt").textContent="Repouso e leitura estão a só "+sep+"° — perto demais para a tolerância de "+P.tol+
+        "°, vai disparar sozinho. Abra mais o movimento, ou baixe a tolerância para uns "+sug+"° nos ajustes.";
+    } else {
+      $("calTxt").textContent="Calibrado: "+sep+"° entre repouso e leitura. Toque de novo em qualquer botão para regravar.";
     }
   }
 
@@ -194,104 +239,92 @@
   var modo="gesto";
   function setModo(m){
     modo=m;
-    $("mGesto").setAttribute("aria-pressed", m==="gesto");
-    $("mToque").setAttribute("aria-pressed", m==="toque");
-    if(m==="toque"){ setFase("TOQUE"); }
-    else { setFase(temSensor ? "ARMADO" : "SEMSENSOR"); }
+    $("mGesto").setAttribute("aria-pressed",m==="gesto");
+    $("mToque").setAttribute("aria-pressed",m==="toque");
+    $("calib").style.display = m==="gesto" ? "block" : "none";
+    if(m==="toque") setFase("TOQUE");
+    else setFase(!temSensor?"SEMSENSOR":(poseRep&&poseLei?"REARMANDO":"SEMCAL"));
     log("modo: "+m);
   }
   $("mGesto").onclick=function(){ setModo("gesto"); };
   $("mToque").onclick=function(){ setModo("toque"); };
 
-  palco.addEventListener("click", function(ev){
+  palco.addEventListener("click",function(ev){
     if(ev.target.tagName==="BUTTON") return;
     if(modo==="toque") disparar("toque");
   });
 
-  /* ---------- falso positivo ---------- */
   $("falso").onclick=function(ev){
     ev.stopPropagation();
     if(nAcerto>0){ nAcerto--; $("cAcerto").textContent=nAcerto; }
     nFalso++; $("cFalso").textContent=nFalso;
-    log("FALSO POSITIVO marcado pelo usuário");
+    log("FALSO POSITIVO marcado");
   };
 
   /* ---------- ajustes ---------- */
-  function liga(rid, vid, chave, sufixo){
-    var r=$(rid), v=$(vid);
-    r.oninput=function(){
-      P[chave]=parseInt(r.value,10);
-      v.textContent=r.value+sufixo;
-      if(chave==="baixo") $("mBaixo").textContent=r.value+"°";
-      if(chave==="alto")  $("mAlto").textContent=r.value+"°";
-      salvar();
-    };
+  function liga(rid,vid,chave,suf){
+    var r=$(rid),v=$(vid);
+    r.oninput=function(){ P[chave]=parseInt(r.value,10); v.textContent=r.value+suf; salvar(); atualizaCalTxt(); };
   }
-  liga("rBaixo","vBaixo","baixo","°");
-  liga("rAlto","vAlto","alto","°");
-  liga("rHold","vHold","hold"," ms");
-  liga("rEstab","vEstab","estab","°");
+  liga("rTol","vTol","tol","°"); liga("rHold","vHold","hold"," ms"); liga("rEstab","vEstab","estab","°");
 
-  function salvar(){ try{ localStorage.setItem("neb_gesto", JSON.stringify(P)); }catch(e){} }
+  function salvar(){
+    try{ localStorage.setItem("neb_gesto2",JSON.stringify({P:P,rep:poseRep,lei:poseLei})); }catch(e){}
+  }
   function carregar(){
     try{
-      var s=localStorage.getItem("neb_gesto"); if(!s) return;
+      var s=localStorage.getItem("neb_gesto2"); if(!s) return;
       var o=JSON.parse(s);
-      ["baixo","alto","hold","estab"].forEach(function(k){ if(typeof o[k]==="number") P[k]=o[k]; });
-      $("rBaixo").value=P.baixo; $("vBaixo").textContent=P.baixo+"°"; $("mBaixo").textContent=P.baixo+"°";
-      $("rAlto").value=P.alto;   $("vAlto").textContent=P.alto+"°";   $("mAlto").textContent=P.alto+"°";
+      if(o.P){ ["tol","hold","estab"].forEach(function(k){ if(typeof o.P[k]==="number") P[k]=o.P[k]; }); }
+      if(o.rep){ poseRep=o.rep; $("bRep").classList.add("ok"); }
+      if(o.lei){ poseLei=o.lei; $("bLei").classList.add("ok"); }
+      $("rTol").value=P.tol;     $("vTol").textContent=P.tol+"°";
       $("rHold").value=P.hold;   $("vHold").textContent=P.hold+" ms";
       $("rEstab").value=P.estab; $("vEstab").textContent=P.estab+"°";
     }catch(e){}
   }
-  carregar();
+  carregar(); atualizaCalTxt();
 
   $("bZerar").onclick=function(){
-    nAcerto=0; nFalso=0; latencias=[];
-    $("cAcerto").textContent="0"; $("cFalso").textContent="0"; $("cLat").textContent="--";
+    nAcerto=0;nFalso=0;latencias=[];
+    $("cAcerto").textContent="0";$("cFalso").textContent="0";$("cLat").textContent="--";
     log("contadores zerados");
   };
+  $("bLimpar").onclick=function(){
+    poseRep=null;poseLei=null;
+    $("bRep").classList.remove("ok");$("bLei").classList.remove("ok");
+    salvar();atualizaCalTxt();setFase("SEMCAL");log("calibragem apagada");
+  };
   $("bCopiar").onclick=function(){
+    var sep=(poseRep&&poseLei)?Math.round(ang(poseRep,poseLei)):"—";
     var cab="NoEdgeBall — bancada de gesto\n"+
             "disparos "+nAcerto+" · sem querer "+nFalso+" · latência média "+$("cLat").textContent+" ms\n"+
-            "ajustes: repouso "+P.baixo+"° · leitura "+P.alto+"° · parado "+P.hold+" ms · tremor "+P.estab+"°\n\n";
+            "separação repouso/leitura "+sep+"° · tolerância "+P.tol+"° · parado "+P.hold+" ms · tremor "+P.estab+"°\n\n";
     var txt=cab+linhas.slice().reverse().join("\n");
-    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(
-      function(){ log("log copiado"); }, function(){ alert(txt); });
+    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){log("log copiado");},function(){alert(txt);});
     else alert(txt);
   };
 
-  /* ---------- permissão / início ---------- */
+  /* ---------- permissão ---------- */
   function mostrarErro(t){ var e=$("erro"); e.textContent=t; e.style.display="block"; }
-
   function ligarSensor(){
-    window.addEventListener("devicemotion", onMotion, {passive:true});
-    setFase("ARMADO");
+    window.addEventListener("devicemotion",onMotion,{passive:true});
+    setFase(poseRep&&poseLei?"REARMANDO":"SEMCAL");
     setTimeout(function(){
-      if(!temSensor){
-        setFase("SEMSENSOR");
-        mostrarErro("O acelerômetro não respondeu. Em iPhone é preciso liberar; em desktop não existe. "+
-                    "Use o modo Toque, ou abra no celular.");
-      }
-    }, 1500);
+      if(!temSensor){ setFase("SEMSENSOR");
+        mostrarErro("O acelerômetro não respondeu. Em desktop não existe; no iPhone é preciso liberar. Use o modo Toque."); }
+    },1500);
   }
-
-  if(typeof DeviceMotionEvent!=="undefined" &&
-     typeof DeviceMotionEvent.requestPermission==="function"){
-    var b=$("permBtn"); b.style.display="block";
+  if(typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function"){
+    var b=$("permBtn"); b.style.display="block"; setFase("SEMSENSOR");
     b.onclick=function(){
       DeviceMotionEvent.requestPermission().then(function(r){
         if(r==="granted"){ b.style.display="none"; ligarSensor(); }
         else mostrarErro("Permissão de movimento negada.");
       }).catch(function(){ mostrarErro("Não foi possível pedir a permissão de movimento."); });
     };
-    setFase("SEMSENSOR");
-  } else if(typeof DeviceMotionEvent!=="undefined"){
-    ligarSensor();
-  } else {
-    setFase("SEMSENSOR");
-    mostrarErro("Este navegador não expõe o acelerômetro. Use o modo Toque.");
-  }
+  } else if(typeof DeviceMotionEvent!=="undefined"){ ligarSensor(); }
+  else { setFase("SEMSENSOR"); mostrarErro("Este navegador não expõe o acelerômetro. Use o modo Toque."); }
 
   log("bancada aberta");
 })();
