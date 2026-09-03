@@ -1,7 +1,7 @@
 /* NoEdgeBall — service worker
    Guarda a página para abrir sem rede. O reconhecimento de fala do navegador ainda
    precisa de internet; o que fica offline é o app, o placar e o histórico. */
-var CACHE = "noedgeball-v12";
+var CACHE = "noedgeball-v13";
 var ARQUIVOS = ["./", "./index.html", "./calibrar.html", "./gesto.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function(e){
