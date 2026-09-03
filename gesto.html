@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>NoEdgeBall — bancada de gesto</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{background:#0b0f14;color:#e7eef6;font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       display:flex;flex-direction:column;overscroll-behavior:none}
+  header{padding:10px 14px;border-bottom:1px solid #1b2634;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.2px}
+  .modo{display:flex;gap:4px}
+  .modo button{background:#141c26;color:#8ea3b8;border:1px solid #24313f;border-radius:999px;
+               padding:5px 11px;font-size:12px;font-weight:600}
+  .modo button[aria-pressed="true"]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+
+  #palco{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+         gap:14px;padding:16px;position:relative;user-select:none}
+  #palco.flash{background:#16a34a}
+  #estado{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#7d93aa;font-weight:700}
+  #angulo{font-size:74px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  #angulo small{font-size:24px;color:#6b8096}
+  .barra{width:min(340px,86vw);height:14px;background:#141c26;border-radius:999px;overflow:hidden;position:relative}
+  .barra i{position:absolute;inset:0 auto 0 0;background:#1d4ed8;border-radius:999px;width:0}
+  .marcas{width:min(340px,86vw);display:flex;justify-content:space-between;font-size:11px;color:#4d6072}
+
+  #contadores{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .card{background:#111925;border:1px solid #1e2a38;border-radius:12px;padding:8px 14px;text-align:center;min-width:88px}
+  .card b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+  .card span{font-size:11px;color:#7d93aa;text-transform:uppercase;letter-spacing:.08em}
+
+  #erro{background:#7f1d1d;color:#fff;padding:10px 14px;font-size:13px;display:none}
+  #falso{background:#7f1d1d;color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px}
+  #permBtn{background:#1d4ed8;color:#fff;border:0;border-radius:10px;padding:13px 20px;font-weight:700;font-size:15px}
+
+  details{border-top:1px solid #1b2634;background:#0d131b}
+  summary{padding:11px 14px;font-size:13px;color:#8ea3b8;font-weight:600;cursor:pointer}
+  .ajuste{padding:0 14px 12px;display:grid;gap:10px}
+  .lin{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;font-size:13px;color:#a8bccf}
+  .lin input[type=range]{width:100%;grid-column:1/-1}
+  .lin b{font-variant-numeric:tabular-nums;color:#e7eef6}
+  #log{max-height:34vh;overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;
+       padding:0 14px 12px;color:#9fb4c8;white-space:pre-wrap}
+  .rodape{display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap}
+  .rodape button{flex:1;min-width:120px;background:#1b2634;color:#cfe0f0;border:1px solid #2a3a4c;
+                 border-radius:10px;padding:10px;font-size:13px;font-weight:600}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bancada de gesto</h1>
+  <div class="modo">
+    <button id="mGesto"  aria-pressed="true">Gesto</button>
+    <button id="mToque"  aria-pressed="false">Toque</button>
+  </div>
+</header>
+
+<div id="erro"></div>
+
+<div id="palco">
+  <div id="estado">iniciando</div>
+  <div id="angulo">--<small>°</small></div>
+  <div class="barra"><i id="preench"></i></div>
+  <div class="marcas"><span>0°</span><span id="mBaixo">25°</span><span id="mAlto">45°</span><span>90°</span></div>
+
+  <div id="contadores">
+    <div class="card"><b id="cAcerto">0</b><span>disparos</span></div>
+    <div class="card"><b id="cFalso">0</b><span>sem querer</span></div>
+    <div class="card"><b id="cLat">--</b><span>ms médio</span></div>
+  </div>
+
+  <button id="permBtn" style="display:none">Liberar o sensor de movimento</button>
+  <button id="falso">Esse foi sem querer</button>
+</div>
+
+<details>
+  <summary>Ajustes e log</summary>
+  <div class="ajuste">
+    <div class="lin"><span>Ângulo de repouso (braço baixo)</span><b id="vBaixo">25°</b>
+      <input type="range" id="rBaixo" min="0" max="60" step="1" value="25"></div>
+    <div class="lin"><span>Ângulo de leitura (pulso erguido)</span><b id="vAlto">45°</b>
+      <input type="range" id="rAlto" min="20" max="85" step="1" value="45"></div>
+    <div class="lin"><span>Tempo parado para valer</span><b id="vHold">300 ms</b>
+      <input type="range" id="rHold" min="0" max="900" step="50" value="300"></div>
+    <div class="lin"><span>Tremor tolerado enquanto parado</span><b id="vEstab">12°</b>
+      <input type="range" id="rEstab" min="3" max="30" step="1" value="12"></div>
+  </div>
+  <div id="log">—</div>
+  <div class="rodape">
+    <button id="bZerar">Zerar contadores</button>
+    <button id="bCopiar">Copiar log</button>
+  </div>
+</details>
+
+<script>
+(function(){
+  "use strict";
+
+  var $ = function(id){ return document.getElementById(id); };
+  var palco=$("palco"), estadoEl=$("estado"), anguloEl=$("angulo"), preench=$("preench");
+
+  /* ---------- parâmetros ---------- */
+  var P = { baixo:25, alto:45, hold:300, estab:12, refrat:1200 };
+
+  /* ---------- estado da máquina ---------- */
+  /* ARMADO      -> braço baixo, pronto para disparar
+     SUBINDO     -> passou do ângulo alto, medindo estabilidade
+     DISPAROU    -> acabou de acionar
+     REARMANDO   -> precisa baixar o braço abaixo de "baixo" para armar de novo   */
+  var fase="INICIO", tSubiu=0, tParado=0, refBase=null, ultDisparo=0;
+  var elev=0, elevSuave=0, temSensor=false;
+  var latencias=[], nAcerto=0, nFalso=0, linhas=[];
+
+  function agora(){ return Date.now(); }
+  function hora(){ var d=new Date(); return d.toTimeString().slice(0,8); }
+
+  function log(txt){
+    linhas.push("["+hora()+"] "+txt);
+    if(linhas.length>300) linhas.shift();
+    var el=$("log"); el.textContent = linhas.slice().reverse().join("\n");
+  }
+
+  function setFase(f){
+    if(fase===f) return;
+    fase=f;
+    var rot={ARMADO:"armado — braço baixo",SUBINDO:"subindo",DISPAROU:"disparou",
+             REARMANDO:"baixe o braço para rearmar",TOQUE:"toque na tela",SEMSENSOR:"sem sensor"};
+    estadoEl.textContent = rot[f]||f;
+  }
+
+  /* ---------- disparo ---------- */
+  function disparar(origem, latencia){
+    var t=agora();
+    if(t-ultDisparo < P.refrat) return;
+    ultDisparo=t;
+    nAcerto++; $("cAcerto").textContent=nAcerto;
+    if(typeof latencia==="number"){
+      latencias.push(latencia);
+      var s=0; for(var i=0;i<latencias.length;i++) s+=latencias[i];
+      $("cLat").textContent = Math.round(s/latencias.length);
+    }
+    if(navigator.vibrate) { try{ navigator.vibrate(40); }catch(e){} }
+    palco.classList.add("flash");
+    setTimeout(function(){ palco.classList.remove("flash"); }, 220);
+    log("DISPARO ("+origem+")"+(typeof latencia==="number"?" latência "+Math.round(latencia)+" ms":"")+
+        " · ângulo "+Math.round(elevSuave)+"°");
+  }
+
+  /* ---------- leitura do acelerômetro ---------- */
+  function onMotion(ev){
+    var g = ev.accelerationIncludingGravity;
+    if(!g || g.x===null) return;
+    temSensor=true;
+    var m = Math.sqrt(g.x*g.x + g.y*g.y + g.z*g.z);
+    if(m < 3) return;                       /* queda livre / leitura ruim */
+    var razao = Math.max(-1, Math.min(1, g.z/m));
+    elev = Math.asin(razao) * 180/Math.PI;  /* elevação da tela acima da horizontal */
+    elevSuave = elevSuave*0.7 + elev*0.3;   /* suavização */
+    passo();
+  }
+
+  function passo(){
+    var t=agora(), a=elevSuave;
+
+    anguloEl.innerHTML = Math.round(a) + "<small>°</small>";
+    var pct = Math.max(0, Math.min(100, (a/90)*100));
+    preench.style.width = pct + "%";
+    preench.style.background = a>=P.alto ? "#16a34a" : "#1d4ed8";
+
+    if(modo!=="gesto") return;
+
+    if(fase==="ARMADO"){
+      if(a >= P.alto){ setFase("SUBINDO"); tSubiu=t; tParado=t; refBase=a; }
+    }
+    else if(fase==="SUBINDO"){
+      if(a < P.baixo){ setFase("ARMADO"); return; }
+      if(refBase===null) refBase=a;
+      if(Math.abs(a-refBase) > P.estab){ refBase=a; tParado=t; return; }  /* ainda mexendo */
+      if(t - tParado >= P.hold){
+        disparar("gesto", t - tSubiu);
+        setFase("REARMANDO");
+      }
+    }
+    else if(fase==="REARMANDO"){
+      if(a < P.baixo){ setFase("ARMADO"); refBase=null; }
+    }
+  }
+
+  /* ---------- modo ---------- */
+  var modo="gesto";
+  function setModo(m){
+    modo=m;
+    $("mGesto").setAttribute("aria-pressed", m==="gesto");
+    $("mToque").setAttribute("aria-pressed", m==="toque");
+    if(m==="toque"){ setFase("TOQUE"); }
+    else { setFase(temSensor ? "ARMADO" : "SEMSENSOR"); }
+    log("modo: "+m);
+  }
+  $("mGesto").onclick=function(){ setModo("gesto"); };
+  $("mToque").onclick=function(){ setModo("toque"); };
+
+  palco.addEventListener("click", function(ev){
+    if(ev.target.tagName==="BUTTON") return;
+    if(modo==="toque") disparar("toque");
+  });
+
+  /* ---------- falso positivo ---------- */
+  $("falso").onclick=function(ev){
+    ev.stopPropagation();
+    if(nAcerto>0){ nAcerto--; $("cAcerto").textContent=nAcerto; }
+    nFalso++; $("cFalso").textContent=nFalso;
+    log("FALSO POSITIVO marcado pelo usuário");
+  };
+
+  /* ---------- ajustes ---------- */
+  function liga(rid, vid, chave, sufixo){
+    var r=$(rid), v=$(vid);
+    r.oninput=function(){
+      P[chave]=parseInt(r.value,10);
+      v.textContent=r.value+sufixo;
+      if(chave==="baixo") $("mBaixo").textContent=r.value+"°";
+      if(chave==="alto")  $("mAlto").textContent=r.value+"°";
+      salvar();
+    };
+  }
+  liga("rBaixo","vBaixo","baixo","°");
+  liga("rAlto","vAlto","alto","°");
+  liga("rHold","vHold","hold"," ms");
+  liga("rEstab","vEstab","estab","°");
+
+  function salvar(){ try{ localStorage.setItem("neb_gesto", JSON.stringify(P)); }catch(e){} }
+  function carregar(){
+    try{
+      var s=localStorage.getItem("neb_gesto"); if(!s) return;
+      var o=JSON.parse(s);
+      ["baixo","alto","hold","estab"].forEach(function(k){ if(typeof o[k]==="number") P[k]=o[k]; });
+      $("rBaixo").value=P.baixo; $("vBaixo").textContent=P.baixo+"°"; $("mBaixo").textContent=P.baixo+"°";
+      $("rAlto").value=P.alto;   $("vAlto").textContent=P.alto+"°";   $("mAlto").textContent=P.alto+"°";
+      $("rHold").value=P.hold;   $("vHold").textContent=P.hold+" ms";
+      $("rEstab").value=P.estab; $("vEstab").textContent=P.estab+"°";
+    }catch(e){}
+  }
+  carregar();
+
+  $("bZerar").onclick=function(){
+    nAcerto=0; nFalso=0; latencias=[];
+    $("cAcerto").textContent="0"; $("cFalso").textContent="0"; $("cLat").textContent="--";
+    log("contadores zerados");
+  };
+  $("bCopiar").onclick=function(){
+    var cab="NoEdgeBall — bancada de gesto\n"+
+            "disparos "+nAcerto+" · sem querer "+nFalso+" · latência média "+$("cLat").textContent+" ms\n"+
+            "ajustes: repouso "+P.baixo+"° · leitura "+P.alto+"° · parado "+P.hold+" ms · tremor "+P.estab+"°\n\n";
+    var txt=cab+linhas.slice().reverse().join("\n");
+    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(
+      function(){ log("log copiado"); }, function(){ alert(txt); });
+    else alert(txt);
+  };
+
+  /* ---------- permissão / início ---------- */
+  function mostrarErro(t){ var e=$("erro"); e.textContent=t; e.style.display="block"; }
+
+  function ligarSensor(){
+    window.addEventListener("devicemotion", onMotion, {passive:true});
+    setFase("ARMADO");
+    setTimeout(function(){
+      if(!temSensor){
+        setFase("SEMSENSOR");
+        mostrarErro("O acelerômetro não respondeu. Em iPhone é preciso liberar; em desktop não existe. "+
+                    "Use o modo Toque, ou abra no celular.");
+      }
+    }, 1500);
+  }
+
+  if(typeof DeviceMotionEvent!=="undefined" &&
+     typeof DeviceMotionEvent.requestPermission==="function"){
+    var b=$("permBtn"); b.style.display="block";
+    b.onclick=function(){
+      DeviceMotionEvent.requestPermission().then(function(r){
+        if(r==="granted"){ b.style.display="none"; ligarSensor(); }
+        else mostrarErro("Permissão de movimento negada.");
+      }).catch(function(){ mostrarErro("Não foi possível pedir a permissão de movimento."); });
+    };
+    setFase("SEMSENSOR");
+  } else if(typeof DeviceMotionEvent!=="undefined"){
+    ligarSensor();
+  } else {
+    setFase("SEMSENSOR");
+    mostrarErro("Este navegador não expõe o acelerômetro. Use o modo Toque.");
+  }
+
+  log("bancada aberta");
+})();
+</script>
+</body>
+</html>
