@@ -390,7 +390,7 @@ footer a{color:var(--ink-2)}
    </div>
   </div>
 
-  <footer class="esconde">Protótipo para validar a gramática de voz em português antes de escrever qualquer linha de Android. O reconhecimento aqui é o do navegador (usa rede); no relógio a ideia é o modelo on-device.</footer>
+  <footer class="esconde"><a href="./calibrar.html" style="color:var(--accent)">Bancada de calibragem</a> — grava o áudio junto com a transcrição, para comparar motores depois.<br><br>Protótipo para validar a gramática de voz em português antes de escrever qualquer linha de Android. O reconhecimento aqui é o do navegador (usa rede); no relógio a ideia é o modelo on-device.</footer>
 </div>
 
 <script>
@@ -554,6 +554,11 @@ function scoreFrom(s){
      pontos que precedem a palavra. Já "11", "21", "64" não são compostos de nada —
      são a colagem de dois games, que se fala "um a um", "seis a quatro". */
   var comp = pre.match(/^(3|4)([1-9])$/);   /* o dígito extra é a marca da elisão */
+  if(!comp){
+    /* o mesmo composto, mas escrito por extenso: "trinta e cinco" */
+    var ext = pre.match(/^(trinta|quarenta)\s+e\s+(um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|[1-9])$/);
+    if(ext) comp = [pre, ext[1]==="trinta" ? "3" : "4", ext[2]];
+  }
   if(comp) return {t:"pts", a:+comp[1]*10, b:+comp[1]*10,
                    note:'"' + pre + '" = "' + (comp[1]==="3"?"trinta":"quarenta") + ' e ' + comp[2] +
                         '", que é como sai "' + (comp[1]==="3"?"trinta":"quarenta") + ' iguais"'};

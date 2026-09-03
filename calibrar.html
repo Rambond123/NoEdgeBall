@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1E24">
+<link rel="icon" href="./icon-192.png">
+<title>Calibragem — NoEdgeBall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F1F4F3; --surface:#FFFFFF; --surface-2:#E9EEEC;
+  --ink:#10262E; --ink-2:#4A6169; --ink-3:#7C9298; --line:#D6DFDD;
+  --accent:#FF6B2C; --accent-soft:rgba(255,107,44,.13);
+  --ok:#2C7A4E; --bad:#B3261E; --warn:#A8621C;
+  --board:#0B1E24; --board-2:#132B33; --board-ink:#F1F4F3; --board-dim:#6E8A92;
+  --shadow:0 1px 2px rgba(16,38,46,.06), 0 8px 24px -14px rgba(16,38,46,.22);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --ground:#0A1216; --surface:#121E23; --surface-2:#18262C;
+  --ink:#E7ECEB; --ink-2:#94A9AF; --ink-3:#6C838A; --line:#22343A;
+  --accent:#FF7C42; --accent-soft:rgba(255,124,66,.15);
+  --ok:#5CB683; --bad:#E27469; --warn:#D39A55;
+  --board:#08151A; --board-2:#102229; --board-ink:#E7ECEB; --board-dim:#61797F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  --ground:#0A1216; --surface:#121E23; --surface-2:#18262C;
+  --ink:#E7ECEB; --ink-2:#94A9AF; --ink-3:#6C838A; --line:#22343A;
+  --accent:#FF7C42; --accent-soft:rgba(255,124,66,.15);
+  --ok:#5CB683; --bad:#E27469; --warn:#D39A55;
+  --board:#08151A; --board-2:#102229; --board-ink:#E7ECEB; --board-dim:#61797F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto;padding:18px 16px 60px;display:flex;flex-direction:column;gap:16px}
+
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{font-family:"Bebas Neue",Impact,sans-serif;font-weight:400;font-size:clamp(26px,7vw,38px);letter-spacing:.02em;margin:0;line-height:1}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 5px}
+.lede{margin:0;color:var(--ink-2);font-size:14.5px}
+.lede a{color:var(--accent)}
+
+.barra{height:5px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.barra i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s ease}
+.conta{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.conta b{color:var(--ink);font-weight:500}
+
+.cartao{background:var(--board);color:var(--board-ink);border-radius:14px;padding:20px 18px;box-shadow:var(--shadow);text-align:center}
+.bloco{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--board-dim);margin-bottom:12px}
+.diga{font-family:"Bebas Neue",Impact,sans-serif;font-size:clamp(34px,10vw,54px);line-height:1.05;letter-spacing:.02em;margin:0}
+.esperado{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--board-dim);margin-top:10px}
+
+.zona{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.btn-grande{appearance:none;border:0;cursor:pointer;width:100%;padding:18px;border-radius:999px;
+  background:var(--ink);color:var(--ground);font-family:"Bebas Neue",Impact,sans-serif;font-size:26px;letter-spacing:.07em;
+  display:flex;align-items:center;justify-content:center;gap:11px;transition:background .18s}
+.btn-grande[data-on="1"]{background:var(--accent);color:#150802;animation:pulsa 1.6s ease-out infinite}
+.btn-grande:disabled{opacity:.45;cursor:default;animation:none}
+@keyframes pulsa{0%{box-shadow:0 0 0 0 var(--accent-soft)}70%{box-shadow:0 0 0 16px rgba(255,107,44,0)}100%{box-shadow:0 0 0 0 rgba(255,107,44,0)}}
+@media (prefers-reduced-motion:reduce){.btn-grande[data-on="1"]{animation:none}}
+.pt{width:11px;height:11px;border-radius:50%;background:currentColor;flex:none}
+.linha{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
+.btn{appearance:none;cursor:pointer;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:10px 13px;font-size:13.5px;font-weight:500;font-family:inherit}
+.btn:hover{border-color:var(--ink-3)}
+.btn.ok{color:var(--ok)} .btn.bad{color:var(--bad)}
+.btn:disabled{opacity:.4;cursor:default}
+
+.res{width:100%;font-size:14px;border-top:1px solid var(--line);padding-top:12px;display:none}
+.res.on{display:block}
+.res .rot{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:3px}
+.res .ouviu{font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--ink);word-break:break-word}
+.res .alts{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);margin-top:4px;word-break:break-word}
+.res .virou{margin-top:9px;font-size:14px}
+.veredito{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid currentColor;border-radius:5px;padding:2px 8px;margin-bottom:7px}
+.veredito.certo{color:var(--ok)} .veredito.errado{color:var(--bad)} .veredito.nada{color:var(--warn)}
+
+.diag{font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.6;color:var(--ink-2);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%;word-break:break-word}
+.diag .bad{color:var(--bad);font-weight:500} .diag .ok{color:var(--ok)}
+.aviso{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:11px 13px;font-size:13.5px;width:100%}
+
+.painel{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.painel-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.painel-tit{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.lista{max-height:300px;overflow-y:auto}
+.item{display:grid;grid-template-columns:24px minmax(0,1fr);gap:9px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:13px;align-items:start}
+.item:last-child{border-bottom:0}
+.item .m{font-family:"IBM Plex Mono",monospace;font-size:13px}
+.item.certo .m{color:var(--ok)} .item.errado .m{color:var(--bad)} .item.pulou .m{color:var(--ink-3)}
+.item .q{color:var(--ink)} .item .r{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.vazio{padding:16px 14px;color:var(--ink-3);font-size:13px}
+footer{color:var(--ink-3);font-size:12.5px;border-top:1px solid var(--line);padding-top:13px}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <p class="kicker">NoEdgeBall · coleta de dados</p>
+      <h1>Calibragem</h1>
+    </div>
+  </div>
+  <p class="lede">Ele mostra uma frase, você fala, e ele guarda <strong>o áudio junto com o que o reconhecedor entendeu</strong>. No fim sai um arquivo único — com esse arquivo dá para passar as mesmas falas por outros motores e comparar por medição, em vez de por catálogo. <a href="./index.html">Voltar ao placar</a></p>
+
+  <div class="barra"><i id="prog"></i></div>
+  <div class="conta">
+    <span id="pos">frase 1 de 41</span>
+    <span><b id="cN">0</b> gravadas · <b id="cOK">0</b> certas · <span id="taxa">—</span></span>
+  </div>
+
+  <section class="cartao">
+    <div class="bloco" id="bloco">—</div>
+    <p class="diga" id="diga">—</p>
+    <div class="esperado" id="esp"></div>
+  </section>
+
+  <section class="zona">
+    <button class="btn-grande" id="grava"><span class="pt"></span><span id="rot">Gravar</span></button>
+    <div class="linha">
+      <button class="btn" id="pular">Pular</button>
+      <button class="btn" id="repetir" disabled>Regravar</button>
+      <button class="btn" id="prox" disabled>Próxima →</button>
+    </div>
+
+    <div class="res" id="res">
+      <span class="rot">O que o reconhecedor devolveu</span>
+      <div class="ouviu" id="ouviu"></div>
+      <div class="alts" id="alts"></div>
+      <div class="virou">
+        <span class="rot">O que o app entendeu</span>
+        <div><span class="veredito" id="ver"></span></div>
+        <div id="virou"></div>
+      </div>
+      <div class="linha" style="margin-top:10px">
+        <button class="btn ok" id="marcaOK">✓ estava certo</button>
+        <button class="btn bad" id="marcaBAD">✗ estava errado</button>
+      </div>
+    </div>
+
+    <div class="diag" id="diag"></div>
+    <div class="aviso" id="aviso" hidden></div>
+  </section>
+
+  <section class="painel">
+    <div class="painel-topo">
+      <span class="painel-tit">Coletadas</span>
+      <div class="linha" style="width:auto">
+        <button class="btn" id="baixar">Baixar dataset</button>
+        <button class="btn" id="limpar">Limpar</button>
+      </div>
+    </div>
+    <div class="lista" id="lista"><div class="vazio">Nada gravado ainda.</div></div>
+  </section>
+
+  <footer>O áudio fica só no seu aparelho até você baixar o arquivo. Nada é enviado para lugar nenhum — o reconhecimento do navegador é a única coisa que usa rede.</footer>
+</div>
+
+<script>
+/* ====== PARSER (injetado do app, para julgar igual a ele) ====== */
+/* ---- parser e regra de escolha copiados do app, sem alteração ---- */
+var cfg = { superTb:true, invert:false, tts:false, oneShot:true };
+var st  = { tb:false, tbp:[0,0] };          /* o parser só lê st.tb */
+function ordered(a,b,raw){
+  var k = side(raw||"");
+  if(k===1) return [b,a,true];
+  if(k===0) return [a,b,false];
+  return cfg.invert ? [b,a,true] : [a,b,false];
+}
+
+/* ============ normalização ============ */
+function norm(s){
+  return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/(\d)\s*[\u00AA\u00BA\u00B0\u1D43\u1D52]/g,"$1 a")  /* "15ª" "30º" "40°" -> "15 a" */
+    .replace(/(\d)(a|h)\b/g,"$1 $2")                 /* "15a" -> "15 a" */
+    .replace(/(\d)\s*x\s*(\d)/g,"$1 $2")            /* "30x30" -> "30 30" */
+    .replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();
+}
+var PTW = {zero:0,"0":0,love:0,nada:0,quinze:15,"15":15,trinta:30,"30":30,quarenta:40,"40":40,quarento:40};
+var GMW = {zero:0,"0":0,um:1,uma:1,"1":1,dois:2,duas:2,"2":2,tres:3,"3":3,quatro:4,"4":4,cinco:5,"5":5,
+           seis:6,"6":6,sete:7,"7":7,oito:8,"8":8,nove:9,"9":9,dez:10,"10":10,onze:11,"11":11,doze:12,"12":12};
+var FILLER = {a:1,ao:1,o:1,e:1,x:1,por:1,pra:1,para:1,versus:1,ta:1,esta:1,de:1,da:1,do:1,ai:1,eh:1};
+var GAMEW = /\b(game|games|gueime|geime|gueim|gaime|guem|gueimi|greime|geim)\b/;
+
+/* Palavras que só embrulham o placar: "está 15 a 15", "placar 2 a 1", "game a 15 a 15".
+   Somem antes de ler os números — quem decide ponto x game é o número, não a palavra. */
+var LEAD = /^(?:esta|estao|estamos|ta|tao|to|agora|entao|olha|ó|o|os|a|as|placar|marcador|resultado|jogo|partida|game|games|set|sets|ficou|fica|fico|foi|e|eh|ai|de|no|na)\s+/;
+function stripLead(x){ var prev; do{ prev=x; x=x.replace(LEAD,""); }while(x!==prev); return x; }
+
+/* Times. O time 1 é sempre o dono do relógio. */
+var players = [[],[]];
+var PRON1 = /\b(deles|dele|delas|dela|eles|elas|adversario|adversarios|adversaria|seu|sua|outro lado|time dois|time 2)\b/;
+var PRON0 = /\b(nosso|nossa|nossos|nossas|nos|meu|minha|eu|favor|time um|time 1)\b/;
+
+/* Times A e B. O "a" sozinho é a preposição mais comum do placar ("trinta a quinze"),
+   então a letra só conta como time quando vem depois de um marcador — "pra A", "do A",
+   "time A". O "b" não tem esse problema e é aceito mais solto.
+   Cor e direção entram como sinônimos: são palavras longas, que o reconhecedor não perde. */
+var MARC = "(?:pra|para|pro|pros|pras|do|da|de|no|na|time|dupla|lado|equipe|ponto|game)";
+var LADO_A = new RegExp("\\b" + MARC + "\\s+(?:a|ah|ha)\\b|\\b(?:azul|azuis|esquerda|ca)\\b");
+var LADO_B = new RegExp("\\b" + MARC + "\\s+(?:b|be|bee|beh|bh)\\b|\\b(?:laranja|direita|la)\\b");
+
+function side(s){
+  for(var t=0;t<2;t++) for(var i=0;i<players[t].length;i++){
+    var nm=players[t][i];
+    if(nm.length>2 && new RegExp("\\b"+nm+"\\b").test(s)) return t;
+  }
+  if(LADO_B.test(s)) return 1;
+  if(LADO_A.test(s)) return 0;
+  if(PRON1.test(s)) return 1;
+  if(PRON0.test(s)) return 0;
+  return null;
+}
+/* Tira do texto tudo que aponta um lado, para sobrarem só os números. */
+function stripSide(s){
+  var x = s.replace(LADO_A," ").replace(LADO_B," ")
+           .replace(/\b(?:pra|para|pro|pros|pras)\s+/g," ").replace(PRON1," ").replace(PRON0," ");
+  for(var t=0;t<2;t++) for(var i=0;i<players[t].length;i++){
+    var nm=players[t][i];
+    if(nm.length>2) x = x.replace(new RegExp("\\b"+nm+"\\b","g")," ");
+  }
+  return x.replace(/\s+/g," ").trim();
+}
+/* O reconhecedor do Chrome cola números em pt-BR: "quinze trinta" volta como "1530",
+   "trinta trinta" como "3030", e às vezes formatado como moeda ("R$ 15,30"). A pontuação
+   já cai na normalização; aqui desfazemos a colagem, mas só quando o corte dá valores
+   que existem no tênis — assim "15" continua sendo 15 e não vira 1 e 5. */
+var PTSET = {"0":1,"15":1,"30":1,"40":1};
+/* O reconhecedor cola números sem piedade: "quinze trinta" volta "1530", e
+   "três a três, quarenta" volta "3 a 340" — game grudado no ponto. Então não dá
+   para cortar ao meio: é preciso achar a divisão em valores que existem no tênis.
+   Programação dinâmica escolhendo a decomposição com menos pedaços, e no empate
+   a que contém mais valores de ponto (15/30/40 valem mais que dígitos soltos). */
+function decompor(w){
+  if(!/^\d{1,5}$/.test(w)) return null;
+  if(PTSET[w]) return null;                    /* 15, 30, 40 e 0 são inteiros */
+  var n=w.length, m=new Array(n+1);
+  m[0]={p:[],np:0};
+  for(var i=1;i<=n;i++){
+    var best=null;
+    for(var L=1; L<=2 && L<=i; L++){
+      var t=w.slice(i-L,i), ehPt=PTSET[t]===1, ehGm=(L===1);
+      if(!ehPt && !ehGm) continue;
+      var ant=m[i-L];
+      if(!ant) continue;
+      var c={p:ant.p.concat([t]), np:ant.np + ((ehPt&&L===2)?1:0)};
+      if(!best || c.p.length<best.p.length || (c.p.length===best.p.length && c.np>best.np)) best=c;
+    }
+    m[i]=best;
+  }
+  var r=m[n];
+  if(!r || r.p.length<2 || r.p.length>4) return null;
+  return r.p;
+}
+var lastGlue = "";
+function unglue(x){
+  lastGlue = "";
+  var t=x.split(" "), out=[];
+  for(var i=0;i<t.length;i++){
+    var sp = decompor(t[i]);
+    if(sp){ lastGlue = t[i] + " → " + sp.join(" "); out.push.apply(out, sp); }
+    else out.push(t[i]);
+  }
+  return out.join(" ");
+}
+function ord(t,a,b,raw){
+  var v = ordered(a,b,raw);
+  return {t:t, a:v[0], b:v[1], swap:v[2]};
+}
+function nums(s){
+  var out=[], t=s.split(" ");
+  for(var i=0;i<t.length;i++){
+    var w=t[i];
+    if(FILLER[w]) continue;
+    if(PTW.hasOwnProperty(w)) out.push({w:w, pt:PTW[w], gm:GMW.hasOwnProperty(w)?GMW[w]:null});
+    else if(GMW.hasOwnProperty(w)) out.push({w:w, pt:null, gm:GMW[w]});
+  }
+  return out;
+}
+
+/* ============ parser ============ */
+/* Ordem: nomear os times → ler um placar → interpretar um comando.
+   Um placar sempre ganha de um comando: "placar 15 a 15" registra, não pergunta. */
+function parse(raw){
+  var s = norm(raw);
+  if(!s) return null;
+  return teamsFrom(raw, s) || scoreFrom(s) || cmdFrom(s);
+}
+
+/* "Lucas e Jeferson contra Átila e Pedro" — só vale sem nenhum número na frase. */
+function teamsFrom(raw, s){
+  if(nums(s).length) return null;
+  var m = String(raw).match(/^\s*(?:o\s+)?(?:jogo|partida|times|time|quem joga)?[:,\s]*(.{2,60}?)\s+(?:contra|versus|vs\.?|x)\s+(.{2,60}?)\s*$/i);
+  if(!m) return null;
+  var A=m[1].trim(), B=m[2].trim();
+  if(!A || !B) return null;
+  if(/^(ponto|game|placar|set|saque|nada)$/i.test(norm(A))) return null;
+  return {t:"teams", a:A, b:B};
+}
+
+function glued(r, g){ if(g) r.glue=g; return r; }
+function ehGame(x){ return x && x.gm!==null && x.gm<=7; }
+function scoreFrom(s){
+  var pre = stripSide(stripLead(s));
+
+  /* "trinta e dois" e "quarenta e um" são os únicos compostos que o tênis produz:
+     saem da elisão de "trinta iguais" / "quarenta iguais", porque só 30 e 40 são
+     pontos que precedem a palavra. Já "11", "21", "64" não são compostos de nada —
+     são a colagem de dois games, que se fala "um a um", "seis a quatro". */
+  var comp = pre.match(/^(3|4)([1-9])$/);   /* o dígito extra é a marca da elisão */
+  if(!comp){
+    /* o mesmo composto, mas escrito por extenso: "trinta e cinco" */
+    var ext = pre.match(/^(trinta|quarenta)\s+e\s+(um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|[1-9])$/);
+    if(ext) comp = [pre, ext[1]==="trinta" ? "3" : "4", ext[2]];
+  }
+  if(comp) return {t:"pts", a:+comp[1]*10, b:+comp[1]*10,
+                   note:'"' + pre + '" = "' + (comp[1]==="3"?"trinta":"quarenta") + ' e ' + comp[2] +
+                        '", que é como sai "' + (comp[1]==="3"?"trinta":"quarenta") + ' iguais"'};
+
+  var bare = unglue(pre);
+  var glue = lastGlue;
+
+  /* Só o 15 aceita o "a" solto. "quinze" é palavra longa e o reconhecedor entrega o
+     conjunto; em "trinta a" e "quarenta a" ele come o "a" quase sempre — para esses
+     vale a lista de expressões de empate abaixo, feita de palavras que sobrevivem. */
+  if(/^(15|quinze)\s*(?:a|ha|h)$/.test(bare)) return {t:"pts", a:15, b:15};
+
+  /* Falado rápido, "quinze iguais" vira "quinziguais" — uma palavra só, que o
+     reconhecedor entrega inteira e sem espaço. */
+  var grudado = bare.match(/\b(quinz|trint|quarent|zer)\w{0,2}(?:iguai?s|igual|guais)\b/);
+  if(grudado){
+    var vg = {quinz:15, trint:30, quarent:40, zer:0}[grudado[1]];
+    return {t:"pts", a:vg, b:vg};
+  }
+
+  /* Empate dito por extenso. Duas famílias: a palavra do empate ("iguais", "empatados",
+     "deuce") e a do lado duplo ("pros dois", "pra ambos", "cada um"). Tira a expressão
+     do texto e vê que número sobrou — assim "30 pros dois" não lê o "dois" como game. */
+  var TIE_PALAVRA = /\b(iguais|igual|igualado|igualados|igualada|igualadas|empate|empatado|empatados|empatada|empatadas|deuce|duce|deus)\b/g;
+  var TIE_AMBOS = /\b(?:pros?|pras?|para|pro|pra)\s+(?:os\s+|as\s+)?(?:dois|2|ambos|ambas|duas|lados)\b|\bambos\b|\bambas\b|\bcada\s+(?:um|lado)\b|\btodo\s+mundo\b|\bos\s+dois\s+lados\b|\bdos\s+lados\b/g;
+
+  var temEmpate = TIE_PALAVRA.test(s) || TIE_AMBOS.test(s);
+  TIE_PALAVRA.lastIndex = 0; TIE_AMBOS.lastIndex = 0;
+  if(temEmpate){
+    var limpo = unglue(bare.replace(TIE_PALAVRA," ").replace(TIE_AMBOS," ").replace(/\s+/g," ").trim());
+    var ne = nums(limpo);
+    if(ne.length===1){
+      if(ne[0].pt!==null) return {t:"pts", a:ne[0].pt, b:ne[0].pt};
+      if(ne[0].gm!==null && ne[0].gm<=7) return {t:"gms", a:ne[0].gm, b:ne[0].gm};
+    }
+    if(ne.length===0) return {t:"pts", a:40, b:40};   /* "iguais" sozinho = ponto decisivo */
+  }
+
+  var n = nums(bare);
+  var temIguais = temEmpate;
+
+  /* "1, 2, 30 x 30" = um game a dois, trinta iguais. Quatro números numa frase só:
+     os dois primeiros são games (inteiros baixos), os dois últimos são o placar do game. */
+  if(n.length>=4 && ehGame(n[0]) && ehGame(n[1]) && n[2].pt!==null && n[3].pt!==null)
+    return glued({t:"both", g:ordered(n[0].gm,n[1].gm,s), p:ordered(n[2].pt,n[3].pt,s)}, glue);
+
+  /* "6 6 5 3" — em 6-6 o segundo par é o tie-break, que usa números corridos */
+  if(n.length>=4 && ehGame(n[0]) && ehGame(n[1]) && n[0].gm===6 && n[1].gm===6
+     && n[2].gm!==null && n[3].gm!==null)
+    return glued({t:"both", g:[6,6,false], p:ordered(n[2].gm,n[3].gm,s)}, glue);
+
+  /* "3 a 3, 40" — os games vieram inteiros, o segundo número do ponto se perdeu.
+     Aplica o que é certo e diz o que faltou, em vez de inventar o par. */
+  if(n.length===3 && ehGame(n[0]) && ehGame(n[1]) && n[2].pt!==null)
+    return glued({t:"both", g:ordered(n[0].gm,n[1].gm,s), p:null,
+                  meio:"ouvi o ponto " + n[2].pt + " mas faltou o outro número"}, glue);
+
+  /* "um a dois, trinta iguais" — o empate encurta o último par */
+  if(temIguais && n.length>=3 && ehGame(n[0]) && ehGame(n[1]) && n[2].pt!==null)
+    return {t:"both", g:ordered(n[0].gm,n[1].gm,s), p:[n[2].pt, n[2].pt, false]};
+
+  /* "30 iguais", "quatro iguais" */
+  if(temIguais && n.length){
+    if(n[0].pt!==null) return {t:"pts", a:n[0].pt, b:n[0].pt};
+    if(ehGame(n[0])) return {t:"gms", a:n[0].gm, b:n[0].gm};
+  }
+
+  if(n.length>=2){
+    var a=n[0], b=n[1];
+    /* No tie-break tudo é número corrido. */
+    if(st.tb && a.gm!==null && b.gm!==null) return glued(ord("tbp", a.gm, b.gm, s), glue);
+    /* 0/15/30/40 só existe dentro do game. */
+    if(a.pt!==null && b.pt!==null) return glued(ord("pts", a.pt, b.pt, s), glue);
+    /* Número inteiro baixo é game. */
+    if(a.gm!==null && b.gm!==null && a.gm<=7 && b.gm<=7) return glued(ord("gms", a.gm, b.gm, s), glue);
+  }
+
+  /* Sobrou um número de ponto sozinho. Adivinhar empate aqui erraria sempre que
+     "trinta quinze" chegasse cortado — então, em vez de chutar, ensina a forma
+     que o reconhecedor entrega inteira. */
+  if(n.length===1 && n[0].pt!==null)
+    return {t:"amb", why:'ouvi só "' + n[0].pt + '" — faltou o outro número'};
+
+
+  return null;
+}
+
+function cmdFrom(s){
+  if(/\b(desfazer|desfaz|desfa|volta|voltar|corrigir|corrige|apagar|apaga|errei|erro)\b/.test(s)) return {t:"undo"};
+  if(/\b(zerar|zera|reiniciar|reinicia|reset|resetar|novo jogo|nova partida|partida nova)\b/.test(s)) return {t:"reset"};
+
+  if(/\b(no edge|noedge|edge|edgi|ponto de ouro|ponto decisivo|golden|golden point)\b/.test(s))
+    return {t:"pts", a:40, b:40};
+  if(/\b(vantagem|vantagi|advantage)\b/.test(s))
+    return {t:"pts", a:40, b:40, note:"no beach não há vantagem — registrei 40–40"};
+  if(/\b(iguais|igual|deuce|deus|duce)\b/.test(s)) return {t:"pts", a:40, b:40};
+
+  if(GAMEW.test(s)){
+    var g = side(s);
+    if(g===null) return {t:"amb", why:"game de quem?"};
+    return {t:"game", k:g};
+  }
+  if(/\bpontos?\b/.test(s)){
+    var p = side(s);
+    return {t:"pt1", k:(p===null?0:p), guess:(p===null)};
+  }
+  /* Perguntar o placar é o último recurso: só quando não havia número nenhum. */
+  if(/\b(placar|quanto esta|quanto ta|como esta|qual o placar|marcador)\b/.test(s)) return {t:"say"};
+  return null;
+}
+
+
+var PALAVRA_FORTE = /\b(iguais|igual|igualado|igualados|igualada|igualadas|empate|empatado|empatados|empatada|empatadas|deuce|ambos|ambas|game|games|ponto|pontos|placar|marcador|desfazer|zerar|reiniciar|edge|vantagem|set|sets|contra|versus)\b|\b(?:pros?|pras?|para|pro|pra)\s+(?:os\s+|as\s+)?(?:dois|2|ambos|ambas|lados)\b|\bcada\s+(?:um|lado)\b|\btodo\s+mundo\b/;
+function forcaDaAlt(txt){ return PALAVRA_FORTE.test(norm(txt)) ? 2 : 1; }
+
+
+
+/* ====== FRASES ====== */
+var BLOCOS = [
+ {"b":"Pontos do game","itens":[
+  {"d":"quinze zero",            "e":{"t":"pts","a":15,"b":0}},
+  {"d":"trinta quinze",          "e":{"t":"pts","a":30,"b":15}},
+  {"d":"quarenta trinta",        "e":{"t":"pts","a":40,"b":30}},
+  {"d":"quinze trinta",          "e":{"t":"pts","a":15,"b":30}},
+  {"d":"zero quarenta",          "e":{"t":"pts","a":0,"b":40}},
+  {"d":"trinta a quinze",        "e":{"t":"pts","a":30,"b":15}},
+  {"d":"está trinta a quinze",   "e":{"t":"pts","a":30,"b":15}}
+ ]},
+ {"b":"Empates — o ponto fraco de hoje","itens":[
+  {"d":"quinze iguais",          "e":{"t":"pts","a":15,"b":15}},
+  {"d":"trinta iguais",          "e":{"t":"pts","a":30,"b":30}},
+  {"d":"quarenta iguais",        "e":{"t":"pts","a":40,"b":40}},
+  {"d":"quinze a",               "e":{"t":"pts","a":15,"b":15}},
+  {"d":"iguais em trinta",       "e":{"t":"pts","a":30,"b":30}},
+  {"d":"iguais em quarenta",     "e":{"t":"pts","a":40,"b":40}},
+  {"d":"empate em trinta",       "e":{"t":"pts","a":30,"b":30}},
+  {"d":"trinta pros dois",       "e":{"t":"pts","a":30,"b":30}},
+  {"d":"quarenta pra ambos",     "e":{"t":"pts","a":40,"b":40}},
+  {"d":"trinta cada um",         "e":{"t":"pts","a":30,"b":30}},
+  {"d":"trinta a trinta",        "e":{"t":"pts","a":30,"b":30}},
+  {"d":"no edge",                "e":{"t":"pts","a":40,"b":40}}
+ ]},
+ {"b":"Games","itens":[
+  {"d":"um a um",                "e":{"t":"gms","a":1,"b":1}},
+  {"d":"dois a um",              "e":{"t":"gms","a":2,"b":1}},
+  {"d":"três a dois",            "e":{"t":"gms","a":3,"b":2}},
+  {"d":"quatro a três",          "e":{"t":"gms","a":4,"b":3}},
+  {"d":"cinco a quatro",         "e":{"t":"gms","a":5,"b":4}},
+  {"d":"placar dois a um",       "e":{"t":"gms","a":2,"b":1}},
+  {"d":"está três a três",       "e":{"t":"gms","a":3,"b":3}}
+ ]},
+ {"b":"Lados A e B","itens":[
+  {"d":"ponto pro A",            "e":{"t":"pt1","k":0}},
+  {"d":"ponto pra B",            "e":{"t":"pt1","k":1}},
+  {"d":"ponto pro time A",       "e":{"t":"pt1","k":0}},
+  {"d":"ponto pro time B",       "e":{"t":"pt1","k":1}},
+  {"d":"game do A",              "e":{"t":"game","k":0}},
+  {"d":"game do B",              "e":{"t":"game","k":1}},
+  {"d":"trinta a quinze pra B",  "e":{"t":"pts","a":15,"b":30}},
+  {"d":"ponto pro azul",         "e":{"t":"pt1","k":0}},
+  {"d":"ponto pro laranja",      "e":{"t":"pt1","k":1}}
+ ]},
+ {"b":"Frase composta","itens":[
+  {"d":"um a dois, trinta iguais",     "e":{"t":"both","g":[1,2],"p":[30,30]}},
+  {"d":"dois a um, quarenta trinta",   "e":{"t":"both","g":[2,1],"p":[40,30]}},
+  {"d":"três a três, quinze zero",     "e":{"t":"both","g":[3,3],"p":[15,0]}}
+ ]},
+ {"b":"Comandos","itens":[
+  {"d":"desfazer",               "e":{"t":"undo"}},
+  {"d":"zerar",                  "e":{"t":"reset"}},
+  {"d":"placar",                 "e":{"t":"say"}}
+ ]}
+];
+var FRASES = [];
+BLOCOS.forEach(function(b){ b.itens.forEach(function(it){ FRASES.push({bloco:b.b, d:it.d, e:it.e}); }); });
+
+/* ====== estado ====== */
+var $ = function(id){ return document.getElementById(id); };
+var idx = 0, coletadas = [], stream = null, rec = null, mr = null;
+var chunks = [], gravando = false, altsAtual = [], parseAtual = null, blobAtual = null, teveFinal = false, interimAtual = "";
+var CHAVE = "neb.calib.v1";
+
+/* ====== comparação com o esperado ====== */
+function confere(p, e){
+  if(!p) return false;
+  if(p.t !== e.t) return false;
+  if(e.t === "pts" || e.t === "gms" || e.t === "tbp") return p.a === e.a && p.b === e.b;
+  if(e.t === "pt1" || e.t === "game") return p.k === e.k;
+  if(e.t === "both"){
+    if(!p.g || p.g[0] !== e.g[0] || p.g[1] !== e.g[1]) return false;
+    if(!e.p) return !p.p;
+    return !!p.p && p.p[0] === e.p[0] && p.p[1] === e.p[1];
+  }
+  return true;
+}
+function descreve(p){
+  if(!p) return "(não entendeu nada)";
+  if(p.t === "pts") return "ponto " + p.a + "–" + p.b;
+  if(p.t === "gms") return "games " + p.a + "–" + p.b;
+  if(p.t === "tbp") return "tie-break " + p.a + "–" + p.b;
+  if(p.t === "pt1") return "ponto para o lado " + (p.k ? "B" : "A");
+  if(p.t === "game") return "game para o lado " + (p.k ? "B" : "A");
+  if(p.t === "both") return "games " + p.g[0] + "–" + p.g[1] + (p.p ? " + ponto " + p.p[0] + "–" + p.p[1] : " (ponto incompleto)");
+  if(p.t === "amb") return "dúvida: " + p.why;
+  if(p.t === "undo") return "desfazer";
+  if(p.t === "reset") return "zerar";
+  if(p.t === "say") return "falar o placar";
+  if(p.t === "teams") return "nomear times";
+  return p.t;
+}
+function esperadoTexto(e){ return descreve(e); }
+
+/* ====== tela ====== */
+function mostra(){
+  var f = FRASES[idx];
+  $("bloco").textContent = f.bloco;
+  $("diga").textContent = f.d;
+  $("esp").textContent = "deve virar: " + esperadoTexto(f.e);
+  $("pos").textContent = "frase " + (idx+1) + " de " + FRASES.length;
+  $("prog").style.width = ((idx) / FRASES.length * 100) + "%";
+  $("res").classList.remove("on");
+  $("prox").disabled = true; $("repetir").disabled = true;
+  var ja = coletadas.filter(function(c){ return c.i === idx; });
+  if(ja.length){ $("repetir").disabled = false; }
+}
+function placar(){
+  var n = coletadas.filter(function(c){ return c.st !== "pulou"; }).length;
+  var ok = coletadas.filter(function(c){ return c.st === "certo"; }).length;
+  $("cN").textContent = n; $("cOK").textContent = ok;
+  $("taxa").textContent = n ? Math.round(ok/n*100) + "%" : "—";
+}
+function pintaLista(){
+  if(!coletadas.length){ $("lista").innerHTML = '<div class="vazio">Nada gravado ainda.</div>'; return; }
+  var h = "";
+  for(var i = coletadas.length-1; i >= 0; i--){
+    var c = coletadas[i];
+    var marca = c.st === "certo" ? "✓" : c.st === "errado" ? "✗" : "–";
+    h += '<div class="item ' + c.st + '"><div class="m">' + marca + '</div><div>' +
+         '<div class="q">' + esc(c.d) + '</div>' +
+         '<div class="r">' + (c.ouviu ? '“' + esc(c.ouviu) + '”' : "(nada ouvido)") +
+         (c.audio ? "  ·  " + Math.round(c.audio.length*0.75/1024) + " KB" : "  ·  sem áudio") + '</div>' +
+         '</div></div>';
+  }
+  $("lista").innerHTML = h;
+}
+function esc(x){ return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function setDiag(extra){
+  var L = [];
+  L.push("reconhecedor: " + (SR ? '<span class="ok">ok</span>' : '<span class="bad">AUSENTE</span>'));
+  L.push("gravador: " + (window.MediaRecorder ? '<span class="ok">ok</span>' : '<span class="bad">AUSENTE</span>'));
+  L.push("em iframe: " + (framed() ? '<span class="bad">SIM</span>' : '<span class="ok">não</span>'));
+  if(extra) L.push("<b>" + extra + "</b>");
+  $("diag").innerHTML = L.join(" &nbsp;·&nbsp; ");
+}
+function framed(){ try{ return window.self !== window.top; }catch(e){ return true; } }
+
+/* ====== gravação ====== */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function pegaStream(){
+  if(stream) return Promise.resolve(stream);
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+    return Promise.reject(new Error("sem mediaDevices"));
+  return navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ stream = s; return s; });
+}
+
+function comeca(){
+  if(gravando) return;
+  if(!SR){ mostraAviso("Este navegador não expõe reconhecimento de fala. Use o Chrome."); return; }
+  if(framed()){ mostraAviso("A página está dentro de um quadro embutido, que não recebe microfone. Abra o endereço numa aba própria do Chrome."); return; }
+
+  altsAtual = []; parseAtual = null; blobAtual = null; chunks = []; teveFinal = false; interimAtual = "";
+  setDiag("pedindo microfone…");
+
+  pegaStream().then(function(s){
+    /* gravador */
+    try{
+      var tipo = "";
+      if(window.MediaRecorder){
+        var cands = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"];
+        for(var i=0;i<cands.length;i++){ if(MediaRecorder.isTypeSupported(cands[i])){ tipo = cands[i]; break; } }
+        mr = tipo ? new MediaRecorder(s, {mimeType:tipo}) : new MediaRecorder(s);
+        mr.ondataavailable = function(ev){ if(ev.data && ev.data.size) chunks.push(ev.data); };
+        mr.onstop = function(){ blobAtual = new Blob(chunks, {type: mr.mimeType || "audio/webm"}); fecha(); };
+        mr.start();
+      }
+    }catch(e){ mr = null; setDiag("gravador falhou: " + e.name + " — segue só com o texto"); }
+
+    /* reconhecedor */
+    rec = new SR();
+    rec.lang = "pt-BR"; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 4;
+    rec.onstart = function(){ setDiag("ouvindo"); };
+    rec.onresult = function(ev){
+      var it = "";
+      for(var i = ev.resultIndex; i < ev.results.length; i++){
+        var r = ev.results[i];
+        if(r.isFinal){
+          teveFinal = true; altsAtual = [];
+          for(var j = 0; j < r.length; j++) altsAtual.push(r[j].transcript.trim());
+          para();
+          return;
+        } else it += r[0].transcript;
+      }
+      if(it){ interimAtual = it.trim(); $("ouviu").textContent = "…" + it; $("res").classList.add("on"); }
+    };
+    rec.onerror = function(ev){
+      if(ev.error === "not-allowed" || ev.error === "service-not-allowed") mostraAviso("Microfone bloqueado para este site. Libere no cadeado da barra de endereço e recarregue.");
+      else setDiag("erro: " + ev.error);
+    };
+    rec.onend = function(){
+      if(!teveFinal && interimAtual) altsAtual = [interimAtual];
+      para();
+    };
+    try{ rec.start(); }catch(e){}
+    gravando = true;
+    $("grava").dataset.on = "1"; $("rot").textContent = "Ouvindo…"; $("pular").disabled = true;
+  }).catch(function(e){
+    setDiag("microfone recusado: " + (e.name || e.message));
+    mostraAviso("Sem acesso ao microfone. No Android, confira também: Configurações → Apps → Chrome → Permissões → Microfone.");
+  });
+}
+
+function para(){
+  if(!gravando) return;
+  gravando = false;
+  $("grava").dataset.on = "0"; $("rot").textContent = "Gravar"; $("pular").disabled = false;
+  if(rec){ try{ rec.onend = null; rec.stop(); }catch(e){} }
+  if(mr && mr.state !== "inactive"){ try{ mr.stop(); }catch(e){ fecha(); } }
+  else fecha();
+}
+
+function fecha(){
+  var f = FRASES[idx];
+  /* escolhe entre as alternativas como o app faz */
+  var escolhida = null, p = null, melhor = -1;
+  for(var i = 0; i < altsAtual.length; i++){
+    var c = parse(altsAtual[i]);
+    if(!c) continue;
+    if(c.t === "amb"){ if(!p){ escolhida = altsAtual[i]; p = c; } continue; }
+    var forca = forcaDaAlt(altsAtual[i]);
+    if(p && p.t !== "amb" && forca <= melhor) continue;
+    escolhida = altsAtual[i]; p = c; melhor = forca;
+  }
+  if(!escolhida && altsAtual.length) escolhida = altsAtual[0];
+  parseAtual = p;
+
+  var acertou = confere(p, f.e);
+  $("ouviu").textContent = escolhida ? "“" + escolhida + "”" : "(nada ouvido)";
+  $("alts").textContent = altsAtual.length > 1 ? "outras: " + altsAtual.slice(1).map(function(a){return '"'+a+'"';}).join(", ") : "";
+  $("virou").textContent = descreve(p);
+  var v = $("ver");
+  v.className = "veredito " + (!altsAtual.length ? "nada" : acertou ? "certo" : "errado");
+  v.textContent = !altsAtual.length ? "nada ouvido" : acertou ? "bateu" : "não bateu";
+  $("res").classList.add("on");
+  $("prox").disabled = false; $("repetir").disabled = false;
+  setDiag(altsAtual.length ? "pronto" : "o reconhecedor não devolveu texto");
+
+  if(blobAtual && blobAtual.size){
+    var fr = new FileReader();
+    fr.onload = function(){ guarda(escolhida, p, acertou, String(fr.result).split(",")[1], blobAtual.type); };
+    fr.readAsDataURL(blobAtual);
+  } else guarda(escolhida, p, acertou, null, null);
+}
+
+function guarda(ouviu, p, acertou, b64, tipo){
+  coletadas = coletadas.filter(function(c){ return c.i !== idx; });
+  coletadas.push({
+    i: idx, bloco: FRASES[idx].bloco, d: FRASES[idx].d, esperado: FRASES[idx].e,
+    ouviu: ouviu || "", alts: altsAtual.slice(), parse: p, st: !altsAtual.length ? "errado" : (acertou ? "certo" : "errado"),
+    audio: b64, tipoAudio: tipo, quando: new Date().toISOString()
+  });
+  salva(); placar(); pintaLista();
+}
+function marca(st){
+  for(var i = 0; i < coletadas.length; i++) if(coletadas[i].i === idx){ coletadas[i].st = st; coletadas[i].revisto = true; }
+  var v = $("ver"); v.className = "veredito " + (st === "certo" ? "certo" : "errado");
+  v.textContent = st === "certo" ? "bateu (você confirmou)" : "não bateu (você marcou)";
+  salva(); placar(); pintaLista();
+}
+function mostraAviso(t){ $("aviso").textContent = t; $("aviso").hidden = false; }
+
+function salva(){ try{ localStorage.setItem(CHAVE, JSON.stringify(coletadas)); }catch(e){ setDiag("aviso: memória do navegador cheia — baixe o dataset"); } }
+function carrega(){ try{ var r = localStorage.getItem(CHAVE); if(r) coletadas = JSON.parse(r) || []; }catch(e){} }
+
+/* ====== eventos ====== */
+$("grava").onclick = function(){ gravando ? para() : comeca(); };
+$("prox").onclick = function(){ if(idx < FRASES.length-1){ idx++; mostra(); } else { $("diga").textContent = "Acabou."; $("esp").textContent = "Baixe o dataset aí embaixo."; $("prog").style.width = "100%"; } };
+$("pular").onclick = function(){
+  coletadas = coletadas.filter(function(c){ return c.i !== idx; });
+  coletadas.push({i:idx, bloco:FRASES[idx].bloco, d:FRASES[idx].d, esperado:FRASES[idx].e, ouviu:"", alts:[], parse:null, st:"pulou", audio:null, quando:new Date().toISOString()});
+  salva(); placar(); pintaLista(); $("prox").click();
+};
+$("repetir").onclick = function(){ comeca(); };
+$("marcaOK").onclick = function(){ marca("certo"); };
+$("marcaBAD").onclick = function(){ marca("errado"); };
+$("limpar").onclick = function(){ if(!coletadas.length) return; coletadas = []; salva(); placar(); pintaLista(); };
+$("baixar").onclick = function(){
+  var n = coletadas.filter(function(c){ return c.st !== "pulou"; }).length;
+  var ok = coletadas.filter(function(c){ return c.st === "certo"; }).length;
+  var pacote = {
+    app: "NoEdgeBall", tipo: "calibragem", versao: 1,
+    quando: new Date().toISOString(),
+    navegador: navigator.userAgent,
+    total: coletadas.length, gravadas: n, certas: ok, taxa: n ? Math.round(ok/n*100) : null,
+    itens: coletadas
+  };
+  var blob = new Blob([JSON.stringify(pacote, null, 1)], {type:"application/json"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "noedgeball-calibragem-" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+};
+
+carrega(); mostra(); placar(); pintaLista(); setDiag("");
+if(framed()) mostraAviso("A página está dentro de um quadro embutido, que não recebe microfone. Abra o endereço numa aba própria do Chrome.");
+</script>
+</body>
+</html>
